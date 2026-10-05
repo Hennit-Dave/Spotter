@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:db": "vitest run --config vitest.db.config.mts",
     "generate:tokens": "node scripts/generate-design-tokens.js"
   },
   "dependencies": {
