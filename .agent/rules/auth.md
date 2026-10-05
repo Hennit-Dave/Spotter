@@ -1,6 +1,6 @@
 ---
 trigger: glob
-globs: src/server/auth/**,src/middleware.ts
+globs: src/server/auth/**,src/proxy.ts
 ---
 
 

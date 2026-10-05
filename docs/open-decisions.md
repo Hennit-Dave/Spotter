@@ -46,8 +46,8 @@ The PRD's own open questions (section 14) stay in the PRD and are not repeated h
 ### D6. Next.js file name for request interception
 - auth.md globs `src/middleware.ts`. Recent Next.js releases renamed this file.
 - Recommendation: pin the Next.js version first, then update the auth.md glob to match that version's file name.
-- Added 2026-10-05: auth.md now also globs `src/server/auth/**`, and sign-in is email and password, not activation code and PIN. The file name is still needed before the session check on member and admin routes can be built.
-- Status: OPEN
+- Added 2026-10-05: auth.md now also globs `src/server/auth/**`, and sign-in is email and password, not activation code and PIN.
+- Status: DECIDED 2026-10-05. src/proxy.ts. The auth.md glob is updated to match.
 
 ---
 
