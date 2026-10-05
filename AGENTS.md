@@ -44,7 +44,7 @@ Log every question with the fields the PRD lists, including whether it was answe
 Do not add a second database, a separate vector service, a different ORM, or a different framework. Ask the human first if a task seems to need one.
 
 ## Folder map
-The PRD defines no folder layout. Do not create folders until the human approves a structure. Propose one and wait. The PRD is at docs/spotter-prd-revised.md. If it is missing, stop and ask the human before building.
+The PRD defines no folder layout. The human approved one on 2026-10-05; it is in .agent/rules/folder-map.md. Create a folder only from that tree, and only when the feature that needs it begins. For any other folder, propose it and wait. The PRD is at docs/spotter-prd-revised.md. If it is missing, stop and ask the human before building.
 
 ## How to work in this codebase
 - Make one change at a time. Do not batch unrelated changes.
@@ -68,6 +68,7 @@ Do not inline schema, SQL, model names, dimensions, thresholds, prices, or envir
 - .agent/rules/secrets.md: where secrets live and how they stay out of the browser, logs and repository.
 - .agent/rules/client-constraints.md: the cheap phone, small bundle and weak connection rules, including the account screens.
 - .agent/rules/testing.md: the gates that block a merge.
+- .agent/rules/folder-map.md: where code lives, and where the shared auth code sits.
 - .agent/rules/database-changes.md: how a schema change is proposed. The agent never runs one.
 - .agent/rules/git.md: the git commands the agent must never run.
 Skills in skills/ are step-by-step procedures: build-member-feature, build-admin-screen, question-log-triage. Use the matching skill when a task fits it.
