@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   ATTEMPT_LIMIT,
+  ATTEMPT_RULES,
   ATTEMPT_WINDOW_MS,
   isPaused,
   recordFailure,
+  takeAttempt,
   type AttemptStore,
 } from './throttle';
 
@@ -78,5 +80,51 @@ describe('recordFailure', () => {
     await recordFailure(fakeStore(rows), 'ADMIN_LOGIN', 'a@b.co');
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ kind: 'ADMIN_LOGIN', key: 'a@b.co' });
+  });
+});
+
+describe('the password reset email limit', () => {
+  const HOUR = 60 * 60 * 1000;
+
+  it('is three per hour, and wrong tries stay at five in ten minutes', () => {
+    expect(ATTEMPT_RULES.PASSWORD_RESET_EMAIL).toEqual({ limit: 3, windowMs: HOUR });
+    expect(ATTEMPT_RULES.ADMIN_LOGIN).toEqual({ limit: ATTEMPT_LIMIT, windowMs: ATTEMPT_WINDOW_MS });
+  });
+
+  it('allows three requests and refuses the fourth', async () => {
+    const rows: Row[] = [];
+    const store = fakeStore(rows);
+    expect(await takeAttempt(store, 'PASSWORD_RESET_EMAIL', 'a@b.co')).toBe(true);
+    expect(await takeAttempt(store, 'PASSWORD_RESET_EMAIL', 'a@b.co')).toBe(true);
+    expect(await takeAttempt(store, 'PASSWORD_RESET_EMAIL', 'a@b.co')).toBe(true);
+    expect(await takeAttempt(store, 'PASSWORD_RESET_EMAIL', 'a@b.co')).toBe(false);
+    expect(rows).toHaveLength(3);
+  });
+
+  it('does not record a refused request, so trying again does not extend the pause', async () => {
+    const rows: Row[] = Array.from({ length: 3 }, () => ({
+      kind: 'PASSWORD_RESET_EMAIL',
+      key: 'a@b.co',
+      createdAt: at(1000),
+    }));
+    const store = fakeStore(rows);
+    await takeAttempt(store, 'PASSWORD_RESET_EMAIL', 'a@b.co', NOW);
+    await takeAttempt(store, 'PASSWORD_RESET_EMAIL', 'a@b.co', NOW);
+    expect(rows).toHaveLength(3);
+  });
+
+  it('allows a request again once the hour has passed', async () => {
+    const rows: Row[] = Array.from({ length: 3 }, () => ({
+      kind: 'PASSWORD_RESET_EMAIL',
+      key: 'a@b.co',
+      createdAt: at(HOUR + 1000),
+    }));
+    expect(await takeAttempt(fakeStore(rows), 'PASSWORD_RESET_EMAIL', 'a@b.co', NOW)).toBe(true);
+  });
+
+  it('counts each email address separately', async () => {
+    const store = fakeStore([]);
+    for (let i = 0; i < 3; i++) await takeAttempt(store, 'PASSWORD_RESET_EMAIL', 'a@b.co');
+    expect(await takeAttempt(store, 'PASSWORD_RESET_EMAIL', 'other@b.co')).toBe(true);
   });
 });
