@@ -42,9 +42,11 @@ Create the account with status UNVERIFIED and store the normalised ID as the cla
 
 The sign-up response is the same whether or not the claimed ID exists, and whether or not it is already linked.
 
-Passwords are at least 8 characters, with no rules about mixing character types. Store them only as an argon2 hash. Never log a password or return it from any endpoint.
+Passwords are at least 8 characters and at most 1,000, with no rules about mixing character types. Store them only as an argon2id hash, with a memory cost of 19,456 KiB, a time cost of 2 and a parallelism of 1. Never log a password or return it from any endpoint. These settings apply to members and staff alike and live in one place, src/server/auth/password.ts. Change them only with the human's approval.
 
-Reason: a sign-up page that says "that ID belongs to someone else" tells a stranger which IDs are real. Length matters more than character rules, and character rules push people toward passwords they forget.
+When there is no stored hash, such as an unknown email or a staff account that has not set a password, still do the same hashing work against a throwaway value before refusing. The response time must not reveal whether the account exists.
+
+Reason: a sign-up page that says "that ID belongs to someone else" tells a stranger which IDs are real. Length matters more than character rules, and character rules push people toward passwords they forget. The 1,000 character ceiling stops one enormous input from tying up the server.
 
 ## Verify the email
 
@@ -122,6 +124,10 @@ Reason: every SMS costs money the project does not have.
 ## The session
 
 The session is a signed httpOnly cookie carrying the account ID and the account's session version.
+
+**Lifetime.** A member session lasts 30 days. An admin session lasts 12 hours. The expiry is inside the signed value, not only on the cookie, so a copied cookie cannot outlive it. The values live in one place, src/server/auth/cookie.ts.
+
+**Cookie settings.** Both cookies are httpOnly and are marked secure in production. The member cookie is SameSite Lax with Path /. The admin cookie is SameSite Strict with Path /admin, so the browser never sends it to a member route. The two use different cookie names.
 
 On every request, the server also compares the cookie's session version with the one stored on the account. A mismatch means the session has ended: treat the person as signed out. A password reset adds one to the stored version, which ends every other session at once.
 
