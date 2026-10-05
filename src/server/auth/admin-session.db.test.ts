@@ -1,10 +1,13 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getTestConnectionString, getTestDb } from '../test-db';
+import { getDb } from '../db';
 
-// Runs against the Neon test branch only. The guard runs first, and only then is DATABASE_URL
-// pointed at the test branch for this test process, so getDb() can never reach the main branch.
-const testUrl = getTestConnectionString();
-process.env.DATABASE_URL = testUrl;
+// Runs against the Neon test branch only. requireAdmin calls getDb(), so getDb is replaced
+// with the guarded test client. DATABASE_URL is never changed.
+vi.mock('../db', async () => {
+  const { getTestDb } = await import('../test-db');
+  const testDb = getTestDb();
+  return { getDb: () => testDb };
+});
 vi.stubEnv('SESSION_SECRET', 'a-test-secret-that-is-at-least-32-characters-long');
 
 let cookieValue: string | undefined;
@@ -26,7 +29,7 @@ vi.mock('next/navigation', () => ({
 import { getSessionSecret, signSession } from './cookie';
 import { endAdminSession, getAdminStaff, requireAdmin, startAdminSession } from './admin-session';
 
-const db = getTestDb();
+const db = getDb();
 const run = `t${Date.now().toString(36)}`;
 
 async function makeStaff(label: string, role: 'OWNER' | 'STAFF', active = true) {
