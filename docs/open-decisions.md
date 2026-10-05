@@ -46,6 +46,7 @@ The PRD's own open questions (section 14) stay in the PRD and are not repeated h
 ### D6. Next.js file name for request interception
 - auth.md globs `src/middleware.ts`. Recent Next.js releases renamed this file.
 - Recommendation: pin the Next.js version first, then update the auth.md glob to match that version's file name.
+- Added 2026-10-05: auth.md now also globs `src/server/auth/**`, and sign-in is email and password, not activation code and PIN. The file name is still needed before the session check on member and admin routes can be built.
 - Status: OPEN
 
 ---
@@ -120,6 +121,7 @@ The PRD's own open questions (section 14) stay in the PRD and are not repeated h
 
 ### D17. Environment variable names
 - .agent/rules/env.md is a DRAFT. Only DATABASE_URL is confirmed.
+- Proposed names, added 2026-10-05, not decided: RESEND_API_KEY (the key for sending the two account emails), EMAIL_FROM (the sender address, which depends on D24), SESSION_SECRET (signs the session cookie). Each is server-only and never carries a client-visible prefix, per secrets.md.
 - Status: OPEN. Until the names are approved, .env.example holds only DATABASE_URL (trimmed 2026-09-30). Each other name is added when the human approves it and the feature that reads it begins.
 
 ### D18. Web app manifest in the foundation
@@ -140,10 +142,20 @@ The PRD's own open questions (section 14) stay in the PRD and are not repeated h
 
 ### D19. Activation code lifetime
 - auth.md: ask the human, do not invent.
-- Status: OPEN
+- Status: RETIRED 2026-10-05. Replaced by open sign-up. Activation codes no longer exist.
 
 ### D20. Wrong-PIN and wrong-activation-code limits
 - auth.md requires a limit but only gives a number for the daily check-in code: five in ten minutes.
+- Status: RETIRED 2026-10-05. Replaced by open sign-up. PINs and activation codes no longer exist. The sign-in limit is now in auth.md: five wrong passwords for one email in ten minutes pauses that email for ten minutes.
+
+### D24. Resend sending domain
+- auth.md: the sending domain must be verified with Resend before launch. Ask the human which domain.
+- Blocks: launch, and sending any account email. Does not block the account screens or the landing page. EMAIL_FROM (D17) depends on it.
+- Status: OPEN
+
+### D25. Staff and owner sign-in
+- auth.md: staff and owner screens use their own sign-in and session, with a role check before any read or write. How staff sign in is not decided. The Staff model has no sign-in fields.
+- Blocks: every admin screen, including desk linking of new accounts, and the single schema migration. The migration is not proposed until this is settled.
 - Status: OPEN
 
 ---
