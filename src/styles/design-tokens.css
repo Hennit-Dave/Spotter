@@ -1,0 +1,369 @@
+/*
+ * ============================================================
+ * Spotter Design Tokens — AUTO-GENERATED
+ * ============================================================
+ *
+ * Source of truth for all colours, typography, and effects.
+ *
+ * DO NOT EDIT BY HAND.
+ * Re-generate by running:
+ *   node scripts/generate-design-tokens.js
+ *
+ * Generated: 2026-09-30T20:05:29.588Z
+ *
+ * Architecture:
+ *   • Primitive colours  → internal reference only, never used
+ *     directly on UI elements.
+ *   • Color roles        → semantic tokens consumed by every
+ *     component.  Always use these in your CSS/JSX.
+ *   • Typography         → type-scale primitives and composite
+ *     styles (font-size, weight, line-height, letter-spacing).
+ *   • Effects            → box-shadow tokens.
+ * ============================================================
+ */
+
+/* ========================================
+ * PRIMITIVES — internal reference colours
+ * Do NOT use these directly on UI elements.
+ * They exist so colour roles can reference
+ * them via var().  Changing a primitive here
+ * updates every role that points to it.
+ * ======================================== */
+:root {
+
+  /* key-colors.primary-key-color */
+  --primitive-key-colors-primary-key-color: #00e3aa;
+
+  /* key-colors.secondary-key-color */
+  --primitive-key-colors-secondary-key-color: #008f70;
+
+  /* key-colors.tertiary-key-color */
+  --primitive-key-colors-tertiary-key-color: #75f8d2;
+
+  /* key-colors.neutral-key-color */
+  --primitive-key-colors-neutral-key-color: #717975;
+
+  /* key-colors.neutral-variant-key-color */
+  --primitive-key-colors-neutral-variant-key-color: #6a7b73;
+
+  /* key-colors.error-key-color */
+  --primitive-key-colors-error-key-color: #ff1111;
+
+  /* key-colors.warning-key-color */
+  --primitive-key-colors-warning-key-color: #ffa500;
+
+  /* color-palette.primary */
+  --primitive-color-palette-primary-primary0: #000000;
+  --primitive-color-palette-primary-primary10: #012016;
+  --primitive-color-palette-primary-primary20: #033828;
+  --primitive-color-palette-primary-primary30: #06513b;
+  --primitive-color-palette-primary-primary40: #00e3aa;
+  --primitive-color-palette-primary-primary50: #0d8765;
+  --primitive-color-palette-primary-primary60: #04a47a;
+  --primitive-color-palette-primary-primary70: #06c291;
+  --primitive-color-palette-primary-primary80: #22e0a9;
+  --primitive-color-palette-primary-primary90: #44fec4;
+  --primitive-color-palette-primary-primary95: #bcffe3;
+  --primitive-color-palette-primary-primary98: #e7fff4;
+  --primitive-color-palette-primary-primary99: #f3fffa;
+  --primitive-color-palette-primary-primary100: #ffffff;
+
+  /* color-palette.secondary */
+  --primitive-color-palette-secondary-secondary0: #000000;
+  --primitive-color-palette-secondary-secondary10: #012018;
+  --primitive-color-palette-secondary-secondary20: #01382a;
+  --primitive-color-palette-secondary-secondary30: #01513e;
+  --primitive-color-palette-secondary-secondary40: #0c6b54;
+  --primitive-color-palette-secondary-secondary50: #00876a;
+  --primitive-color-palette-secondary-secondary60: #2aa282;
+  --primitive-color-palette-secondary-secondary70: #4cbe9c;
+  --primitive-color-palette-secondary-secondary80: #6adab7;
+  --primitive-color-palette-secondary-secondary90: #87f7d3;
+  --primitive-color-palette-secondary-secondary95: #bbffe7;
+  --primitive-color-palette-secondary-secondary98: #e6fff5;
+  --primitive-color-palette-secondary-secondary99: #f3fffa;
+  --primitive-color-palette-secondary-secondary100: #ffffff;
+
+  /* color-palette.tertiary */
+  --primitive-color-palette-tertiary-tertiary0: #000000;
+  --primitive-color-palette-tertiary-tertiary10: #012018;
+  --primitive-color-palette-tertiary-tertiary20: #01382b;
+  --primitive-color-palette-tertiary-tertiary30: #01513f;
+  --primitive-color-palette-tertiary-tertiary40: #0c6b55;
+  --primitive-color-palette-tertiary-tertiary50: #00876b;
+  --primitive-color-palette-tertiary-tertiary60: #0ea483;
+  --primitive-color-palette-tertiary-tertiary70: #34c09c;
+  --primitive-color-palette-tertiary-tertiary80: #57dcb7;
+  --primitive-color-palette-tertiary-tertiary90: #76f9d3;
+  --primitive-color-palette-tertiary-tertiary95: #bbffe8;
+  --primitive-color-palette-tertiary-tertiary98: #e6fff6;
+  --primitive-color-palette-tertiary-tertiary99: #f3fffa;
+  --primitive-color-palette-tertiary-tertiary100: #ffffff;
+
+  /* color-palette.neutral */
+  --primitive-color-palette-neutral-neutral0: #000000;
+  --primitive-color-palette-neutral-neutral10: #171d1a;
+  --primitive-color-palette-neutral-neutral20: #2b322f;
+  --primitive-color-palette-neutral-neutral30: #414845;
+  --primitive-color-palette-neutral-neutral40: #58605c;
+  --primitive-color-palette-neutral-neutral50: #717975;
+  --primitive-color-palette-neutral-neutral60: #8a938e;
+  --primitive-color-palette-neutral-neutral70: #a5ada9;
+  --primitive-color-palette-neutral-neutral80: #c0c8c4;
+  --primitive-color-palette-neutral-neutral90: #dce5e0;
+  --primitive-color-palette-neutral-neutral95: #eaf3ee;
+  --primitive-color-palette-neutral-neutral98: #f2fbf7;
+  --primitive-color-palette-neutral-neutral99: #f5fefa;
+  --primitive-color-palette-neutral-neutral100: #ffffff;
+  --primitive-color-palette-neutral-neutral92: #e2ebe6;
+  --primitive-color-palette-neutral-neutral94: #e7f0eb;
+  --primitive-color-palette-neutral-neutral96: #edf6f1;
+
+  /* color-palette.neutralvariant */
+  --primitive-color-palette-neutralvariant-neutralvariant0: #000000;
+  --primitive-color-palette-neutralvariant-neutralvariant10: #101e18;
+  --primitive-color-palette-neutralvariant-neutralvariant20: #25342d;
+  --primitive-color-palette-neutralvariant-neutralvariant30: #3a4a43;
+  --primitive-color-palette-neutralvariant-neutralvariant40: #52625a;
+  --primitive-color-palette-neutralvariant-neutralvariant50: #6a7b73;
+  --primitive-color-palette-neutralvariant-neutralvariant60: #83958c;
+  --primitive-color-palette-neutralvariant-neutralvariant70: #9dafa7;
+  --primitive-color-palette-neutralvariant-neutralvariant80: #b8cbc2;
+  --primitive-color-palette-neutralvariant-neutralvariant90: #d4e7de;
+  --primitive-color-palette-neutralvariant-neutralvariant95: #e2f5ec;
+  --primitive-color-palette-neutralvariant-neutralvariant98: #ebfef5;
+  --primitive-color-palette-neutralvariant-neutralvariant99: #f3fff9;
+  --primitive-color-palette-neutralvariant-neutralvariant100: #ffffff;
+
+  /* color-palette.error */
+  --primitive-color-palette-error-error0: #000000;
+  --primitive-color-palette-error-error10: #360f01;
+  --primitive-color-palette-error-error20: #650a00;
+  --primitive-color-palette-error-error30: #920304;
+  --primitive-color-palette-error-error40: #c00308;
+  --primitive-color-palette-error-error50: #ee060d;
+  --primitive-color-palette-error-error60: #fd573c;
+  --primitive-color-palette-error-error70: #fe8b72;
+  --primitive-color-palette-error-error80: #fdb5a4;
+  --primitive-color-palette-error-error90: #ffdbd2;
+  --primitive-color-palette-error-error95: #ffede9;
+  --primitive-color-palette-error-error98: #fff8f6;
+  --primitive-color-palette-error-error99: #fffbfa;
+  --primitive-color-palette-error-error100: #ffffff;
+
+  /* color-palette.warning */
+  --primitive-color-palette-warning-warning0: #000000;
+  --primitive-color-palette-warning-warning10: #281901;
+  --primitive-color-palette-warning-warning20: #452b01;
+  --primitive-color-palette-warning-warning30: #653e01;
+  --primitive-color-palette-warning-warning40: #855401;
+  --primitive-color-palette-warning-warning50: #a66a02;
+  --primitive-color-palette-warning-warning60: #c8810a;
+  --primitive-color-palette-warning-warning70: #ec990e;
+  --primitive-color-palette-warning-warning80: #fdb963;
+  --primitive-color-palette-warning-warning90: #feddba;
+  --primitive-color-palette-warning-warning95: #ffeede;
+  --primitive-color-palette-warning-warning98: #fff8f2;
+  --primitive-color-palette-warning-warning99: #fffcf9;
+  --primitive-color-palette-warning-warning100: #ffffff;
+}
+
+/* ========================================
+ * COLOR ROLES — semantic tokens
+ * USE THESE in components and pages.
+ * Each role maps to a primitive via var()
+ * so re-theming is a single-source change.
+ * ======================================== */
+:root {
+  --color-primary: var(--primitive-color-palette-primary-primary40);  /* {primitives.color palette.primary.primary40} */
+  --color-on-primary: var(--primitive-color-palette-primary-primary10);  /* {primitives.color palette.primary.primary10} */
+  --color-primary-container: var(--primitive-color-palette-primary-primary90);  /* {primitives.color palette.primary.primary90} */
+  --color-on-primary-container: var(--primitive-color-palette-primary-primary30);  /* {primitives.color palette.primary.primary30} */
+  --color-secondary: var(--primitive-color-palette-secondary-secondary40);  /* {primitives.color palette.secondary.secondary40} */
+  --color-on-secondary: var(--primitive-color-palette-secondary-secondary100);  /* {primitives.color palette.secondary.secondary100} */
+  --color-secondary-container: var(--primitive-color-palette-secondary-secondary90);  /* {primitives.color palette.secondary.secondary90} */
+  --color-on-secondary-container: var(--primitive-color-palette-secondary-secondary30);  /* {primitives.color palette.secondary.secondary30} */
+  --color-tertiary: var(--primitive-color-palette-tertiary-tertiary40);  /* {primitives.color palette.tertiary.tertiary40} */
+  --color-on-tertiary: var(--primitive-color-palette-tertiary-tertiary100);  /* {primitives.color palette.tertiary.tertiary100} */
+  --color-tertiary-container: var(--primitive-color-palette-tertiary-tertiary90);  /* {primitives.color palette.tertiary.tertiary90} */
+  --color-on-tertiary-container: var(--primitive-color-palette-tertiary-tertiary30);  /* {primitives.color palette.tertiary.tertiary30} */
+  --color-neutral: var(--primitive-color-palette-neutral-neutral40);  /* {primitives.color palette.neutral.neutral40} */
+  --color-on-neutral: var(--primitive-color-palette-neutral-neutral100);  /* {primitives.color palette.neutral.neutral100} */
+  --color-neutral-container: var(--primitive-color-palette-neutral-neutral90);  /* {primitives.color palette.neutral.neutral90} */
+  --color-on-neutral-container: var(--primitive-color-palette-neutral-neutral30);  /* {primitives.color palette.neutral.neutral30} */
+  --color-neutral-variant: var(--primitive-color-palette-neutralvariant-neutralvariant40);  /* {primitives.color palette.neutralvariant.neutralvariant40} */
+  --color-on-neutral-variant: var(--primitive-color-palette-neutralvariant-neutralvariant100);  /* {primitives.color palette.neutralvariant.neutralvariant100} */
+  --color-neutral-variant-container: var(--primitive-color-palette-neutralvariant-neutralvariant90);  /* {primitives.color palette.neutralvariant.neutralvariant90} */
+  --color-on-neutral-variant-container: var(--primitive-color-palette-neutralvariant-neutralvariant30);  /* {primitives.color palette.neutralvariant.neutralvariant30} */
+  --color-error: var(--primitive-color-palette-error-error40);  /* {primitives.color palette.error.error40} */
+  --color-on-error: var(--primitive-color-palette-error-error100);  /* {primitives.color palette.error.error100} */
+  --color-error-container: var(--primitive-color-palette-error-error90);  /* {primitives.color palette.error.error90} */
+  --color-on-error-container: var(--primitive-color-palette-error-error30);  /* {primitives.color palette.error.error30} */
+  --color-warning: var(--primitive-color-palette-warning-warning40);  /* {primitives.color palette.warning.warning40} */
+  --color-on-warning: var(--primitive-color-palette-warning-warning100);  /* {primitives.color palette.warning.warning100} */
+  --color-warning-container: var(--primitive-color-palette-warning-warning90);  /* {primitives.color palette.warning.warning90} */
+  --color-on-warning-container: var(--primitive-color-palette-warning-warning30);  /* {primitives.color palette.warning.warning30} */
+  --color-surface: var(--primitive-color-palette-neutral-neutral98);  /* {primitives.color palette.neutral.neutral98} */
+  --color-on-surface: var(--primitive-color-palette-neutral-neutral10);  /* {primitives.color palette.neutral.neutral10} */
+  --color-surface-variant: var(--primitive-color-palette-neutralvariant-neutralvariant90);  /* {primitives.color palette.neutralvariant.neutralvariant90} */
+  --color-on-surface-variant: var(--primitive-color-palette-neutralvariant-neutralvariant30);  /* {primitives.color palette.neutralvariant.neutralvariant30} */
+  --color-surface-container-highest: var(--primitive-color-palette-neutral-neutral90);  /* {primitives.color palette.neutral.neutral90} */
+  --color-surface-container-high: var(--primitive-color-palette-neutral-neutral92);  /* {primitives.color palette.neutral.neutral92} */
+  --color-surface-container: var(--primitive-color-palette-neutral-neutral94);  /* {primitives.color palette.neutral.neutral94} */
+  --color-surface-container-low: var(--primitive-color-palette-neutral-neutral96);  /* {primitives.color palette.neutral.neutral96} */
+}
+
+/* ========================================
+ * TYPOGRAPHY SCALE — primitive scale values
+ * ======================================== */
+:root {
+  --typo-scale-fontfamilies-dm-sans: "DM Sans";
+  --typo-scale-lineheights-0: 96px;
+  --typo-scale-lineheights-1: 75px;
+  --typo-scale-lineheights-2: 60px;
+  --typo-scale-lineheights-3: 48px;
+  --typo-scale-lineheights-4: 42px;
+  --typo-scale-lineheights-5: 36px;
+  --typo-scale-lineheights-6: 33px;
+  --typo-scale-lineheights-7: 24px;
+  --typo-scale-lineheights-8: 21px;
+  --typo-scale-lineheights-9: 24px;
+  --typo-scale-lineheights-10: 21px;
+  --typo-scale-lineheights-11: 18px;
+  --typo-scale-lineheights-12: 21px;
+  --typo-scale-lineheights-13: 18px;
+  --typo-scale-lineheights-14: 16.5px;
+  --typo-scale-fontweights-dm-sans-1: 500;
+  --typo-scale-fontweights-dm-sans-2: 600;
+  --typo-scale-fontsize-0: 11px;
+  --typo-scale-fontsize-1: 12px;
+  --typo-scale-fontsize-2: 14px;
+  --typo-scale-fontsize-3: 16px;
+  --typo-scale-fontsize-4: 22px;
+  --typo-scale-fontsize-5: 24px;
+  --typo-scale-fontsize-6: 28px;
+  --typo-scale-fontsize-7: 32px;
+  --typo-scale-fontsize-8: 40px;
+  --typo-scale-fontsize-9: 50px;
+  --typo-scale-fontsize-10: 64px;
+  --typo-scale-letterspacing-0: -4px;
+  --typo-scale-letterspacing-1: -3px;
+  --typo-scale-letterspacing-2: -2px;
+  --typo-scale-letterspacing-3: -1px;
+  --typo-scale-letterspacing-4: -0.85px;
+  --typo-scale-letterspacing-5: -0.75px;
+  --typo-scale-letterspacing-6: -0.8px;
+  --typo-scale-letterspacing-7: -0.9px;
+  --typo-scale-paragraphspacing-0: 0px;
+  --typo-scale-paragraphindent-0: 0px;
+}
+
+/* ========================================
+ * TYPOGRAPHY STYLES — composite type tokens
+ * Use these to set font properties on
+ * headings, body, labels, etc.
+ * ======================================== */
+:root {
+  --type-display-large-dmsans-font-size: 64px;
+  --type-display-large-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-display-large-dmsans-font-weight: 600;
+  --type-display-large-dmsans-line-height: 96px;
+  --type-display-large-dmsans-letter-spacing: -3.5px;
+  --type-display-medium-dmsans-font-size: 50px;
+  --type-display-medium-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-display-medium-dmsans-font-weight: 600;
+  --type-display-medium-dmsans-line-height: 75px;
+  --type-display-medium-dmsans-letter-spacing: -3px;
+  --type-display-small-dmsans-font-size: 40px;
+  --type-display-small-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-display-small-dmsans-font-weight: 600;
+  --type-display-small-dmsans-line-height: 60px;
+  --type-display-small-dmsans-letter-spacing: -2px;
+  --type-headline-large-dmsans-font-size: 32px;
+  --type-headline-large-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-headline-large-dmsans-font-weight: 500;
+  --type-headline-large-dmsans-line-height: 48px;
+  --type-headline-large-dmsans-letter-spacing: -1px;
+  --type-headline-medium-dmsans-font-size: 28px;
+  --type-headline-medium-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-headline-medium-dmsans-font-weight: 500;
+  --type-headline-medium-dmsans-line-height: 42px;
+  --type-headline-medium-dmsans-letter-spacing: -1.75px;
+  --type-headline-small-dmsans-font-size: 24px;
+  --type-headline-small-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-headline-small-dmsans-font-weight: 500;
+  --type-headline-small-dmsans-line-height: 36px;
+  --type-headline-small-dmsans-letter-spacing: -1.4px;
+  --type-title-large-dmsans-font-size: 22px;
+  --type-title-large-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-title-large-dmsans-font-weight: 500;
+  --type-title-large-dmsans-line-height: 33px;
+  --type-title-large-dmsans-letter-spacing: -1px;
+  --type-title-medium-dmsans-font-size: 16px;
+  --type-title-medium-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-title-medium-dmsans-font-weight: 500;
+  --type-title-medium-dmsans-line-height: 24px;
+  --type-title-medium-dmsans-letter-spacing: -1px;
+  --type-title-small-dmsans-font-size: 14px;
+  --type-title-small-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-title-small-dmsans-font-weight: 500;
+  --type-title-small-dmsans-line-height: 21px;
+  --type-title-small-dmsans-letter-spacing: -0.9px;
+  --type-body-large-dmsans-font-size: 16px;
+  --type-body-large-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-body-large-dmsans-font-weight: 500;
+  --type-body-large-dmsans-line-height: 24px;
+  --type-body-large-dmsans-letter-spacing: -0.95px;
+  --type-body-medium-dmsans-font-size: 14px;
+  --type-body-medium-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-body-medium-dmsans-font-weight: 500;
+  --type-body-medium-dmsans-line-height: 21px;
+  --type-body-medium-dmsans-letter-spacing: -0.85px;
+  --type-body-small-dmsans-font-size: 12px;
+  --type-body-small-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-body-small-dmsans-font-weight: 500;
+  --type-body-small-dmsans-line-height: 18px;
+  --type-body-small-dmsans-letter-spacing: -0.4px;
+  --type-label-large-dmsans-font-size: 14px;
+  --type-label-large-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-label-large-dmsans-font-weight: 500;
+  --type-label-large-dmsans-line-height: 21px;
+  --type-label-large-dmsans-letter-spacing: -0.85px;
+  --type-label-medium-dmsans-font-size: 12px;
+  --type-label-medium-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-label-medium-dmsans-font-weight: 500;
+  --type-label-medium-dmsans-line-height: 18px;
+  --type-label-medium-dmsans-letter-spacing: -1px;
+  --type-label-small-dmsans-font-size: 11px;
+  --type-label-small-dmsans-font-family: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-label-small-dmsans-font-weight: 500;
+  --type-label-small-dmsans-line-height: 16.5px;
+  --type-label-small-dmsans-letter-spacing: -0.4px;
+}
+
+/* ========================================
+ * EFFECTS — shadow tokens
+ * ======================================== */
+:root {
+  --shadow-soft-shadow: 1.5px 6px 30px 0px #00000040;
+  --shadow-medium-shadow: 4px 6px 24px 0px #0000002e;
+  --shadow-hard-shadow: 6px 10px 20px 0px #00000033;
+}
+
+/* ========================================
+ * DIMENSIONS — spacing, radius, size
+ * ======================================== */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --size-tap: 48px;
+}

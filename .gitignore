@@ -1,0 +1,28 @@
+# Dependencies
+/node_modules
+
+# Next.js build output
+/.next
+/out
+/build
+/dist
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment files
+.env
+.env*.local
+!.env.example
+
+# Generated Prisma client
+/generated/prisma
+
+# OS files
+.DS_Store
+*.pem
+
+# Editor settings
+.vscode
+.idea
+*.swp
+*.swo
