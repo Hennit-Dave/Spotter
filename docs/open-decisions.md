@@ -104,6 +104,7 @@ The PRD's own open questions (section 14) stay in the PRD and are not repeated h
 - Needed for the foundation: next, react, react-dom, typescript, @types/react, @types/react-dom, @types/node, prisma, @prisma/client. Also eslint and eslint-config-next, for the lint gate in testing.md.
 - Also needed: which package manager to use and which Node version to pin.
 - Status: DECIDED 2026-09-30. Node 24, pinned in .nvmrc and engines. npm, with package-lock.json committed. Pinned: next 16.3.8, react and react-dom 19.3.0, prisma and @prisma/client 7.10.0 (npm's latest prisma is an 8.0 release candidate), typescript 6.0.3 (typescript-eslint needs a version below 6.1), eslint 9.39.5 exact (changed 2026-09-30: eslint-plugin-import, jsx-a11y and react, all required by eslint-config-next 16.3.8, accept ESLint up to 9 only, so 10 fails to install), eslint-config-next 16.3.8, prettier, dotenv, @types/node, @types/react, @types/react-dom. Nothing else without asking.
+- Approved 2026-10-05, installed only when the feature that needs each one begins: @node-rs/argon2 (password hashing), resend (the two account emails), and vitest as a dev dependency (colocated *.test.ts tests). Nothing else without asking.
 
 ### D14. Styling method
 - Recommendation: CSS Modules, which are built into Next.js and need no package. No Tailwind and no UI library. That keeps payload small and every value a token.
