@@ -138,6 +138,7 @@ The PRD's own open questions (section 14) stay in the PRD and are not repeated h
 - Spotter uses PostgreSQL only, so the MySQL driver is not loaded. The CLI runs on developer machines, not in the member app.
 - `npm audit fix --force` would drop Prisma to 6.19.3, which breaks D16. Do not run it.
 - Recommendation: upgrade to the first Prisma 7 patch that clears these, and recheck before launch.
+- Update 2026-10-05: npm audit now reports 9 high findings, all in dev tooling. The Prisma ones above, plus fast-glob, micromatch and braces (stack exhaustion on deeply nested patterns), reached through eslint-config-next and @next/eslint-plugin-next. None come from argon2, resend, the pg adapter, pg or vitest. The human decided to leave all of them as they are. No changes made. Recheck before launch.
 - Status: OPEN. Recheck before launch.
 
 ---
