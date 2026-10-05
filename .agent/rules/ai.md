@@ -41,9 +41,9 @@ These lists are starting points, not the complete set. Extend them from real que
 
 Record on the question log whether the router resolved the question without a model call.
 
-Open point: the PRD describes the pre-router as on-device in one section and server-side in another. Confirm with the human which is intended before building it. Do not pick one silently.
+The pre-router runs on the server, in src/server/router/. It ships no code to the phone. Question text reaches the gym's own server either way, because every question is logged there. The router keeps common question text away from the model provider, not off the network.
 
-Reason: most questions are the same few questions. Resolving them without a model call cuts cost, cuts data use on a small bundle, and keeps common question text off the network. Exact matching is used because a scored router that guesses wrong sends a private question down the shared-card path.
+Reason: most questions are the same few questions. Resolving them without a model call cuts cost, cuts model latency, and keeps common question text away from the model provider. Exact matching is used because a scored router that guesses wrong sends a private question down the shared-card path.
 
 ## The classifier contract
 
@@ -145,4 +145,4 @@ Reason: a slow app on a bad connection is worse than an honest handoff, and the 
 
 A question the pre-router cannot resolve uses at most one classifier call and one answer call. Do not add a summarising call, a rewriting call, or a verification call.
 
-Reason: every extra call costs money, time, and another chance for text to leave the device.
+Reason: every extra call costs money, time, and another chance for text to leave the gym's server.

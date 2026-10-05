@@ -80,7 +80,7 @@ These rules files may not exist yet. If one is missing, do not invent its conten
 - Retrieval: the search step that finds a matching shared card.
 - Embedding: turning text into numbers for meaning search. Only approved shared cards are embedded.
 - Chunk: one approved card embedded whole as one unit.
-- Pre-router: a keyword and pattern step that resolves obvious attendance, balance, and never-answer questions without a model call. Confirm with the human whether it runs on the device or the server; the PRD says both.
+- Pre-router: a keyword and pattern step that resolves obvious attendance, balance, and never-answer questions without a model call. It runs on the server.
 - Handoff: sending the member to a named staff member when the app cannot answer.
 - Membership ID: the permanent ID the system assigns each member when the desk creates them, in the form SPT-7K4Q. Typing it at sign-up is a claim, not proof.
 - Linked account: an account staff have connected to a member record. Only a linked account reaches private records or cards.

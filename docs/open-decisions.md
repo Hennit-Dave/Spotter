@@ -23,7 +23,7 @@ The PRD's own open questions (section 14) stay in the PRD and are not repeated h
 - PRD 7.2 says on-device. PRD 8.2 and 6.2 say on the server. ai.md and AGENTS.md both flag this.
 - Blocks: Feature 1 and Feature 2 routing.
 - Recommendation: the server. FR-6 logs question text on the server anyway, so text reaches the gym's server either way. A server router is a single list in a single place to audit, and ships no code to the phone.
-- Status: OPEN
+- Status: DECIDED 2026-10-05. The server, in src/server/router/. ai.md, the PRD and AGENTS.md updated to match.
 
 ### D3. What the home screen shows during the foundation build
 - PRD FR-1 and client-constraints.md say home shows the status strip, four common questions, and an optional text box.

@@ -120,7 +120,7 @@ Medical and training-plan boundary. The app may repeat what an approved training
 
 - Acceptance (measured, not absolute): a fixed test set of at least forty never-answer questions, covering every listed category plus the two medical examples above, must produce zero leaks before launch. After launch, every miss caught by a wrong-answer report is logged and reviewed weekly. Fail the launch gate if any of the forty leak.
 
-**FR-6. Every question is logged.** The app logs question text, timestamp, member ID, tier, whether an answer was found, which card answered it, whether it was refused and why, whether it handed off, and whether the intent was resolved by the local pre-router or the model (see section 7).
+**FR-6. Every question is logged.** The app logs question text, timestamp, member ID, tier, whether an answer was found, which card answered it, whether it was refused and why, whether it handed off, and whether the intent was resolved by the pre-router or the model (see section 7).
 - Acceptance: after any question, one QuestionLog row exists with these fields set. Fail if a question produces no log row.
 
 ### 6.2 Feature 1: Ask about the gym
@@ -131,7 +131,7 @@ Medical and training-plan boundary. The app may repeat what an approved training
 
 **Flow.**
 1. App sends the question to the ask endpoint.
-2. The server runs the local pre-router (section 7.2). If it confidently labels the question ATTENDANCE or BALANCE, it routes to Feature 2. If it confidently matches a never-answer phrase, it routes to Feature 5. Otherwise it continues.
+2. The server runs the pre-router (section 7.2). If it confidently labels the question ATTENDANCE or BALANCE, it routes to Feature 2. If it confidently matches a never-answer phrase, it routes to Feature 5. Otherwise it continues.
 3. For a gym question, the server embeds the question and runs a tier-filtered similarity search over approved card embeddings, taking the top card.
 4. If the top card's similarity is at or above the threshold, the model writes a one or two line answer grounded only in that card. If below, the server routes to Feature 5.
 5. The answer renders with the card body and last-confirmed date underneath.
@@ -325,19 +325,19 @@ Medical and training-plan boundary. The app may repeat what an approved training
 
 ### 7.1 Models, configuration and free-tier limits
 
-- **Language model: Google Gemini 2.0 Flash**, called through Google AI Studio. It writes the one or two line answer from a retrieved card, and classifies intent only when the local pre-router is unsure. **The model must be called in a no-training configuration**, meaning a paid tier or a data-processing setting where submitted text is not used to improve the provider's products. Member question text can contain personal detail, so it must not train a third party's models. If a no-training free configuration is not available, the PRD's cost section treats the paid data-processing tier as the baseline, not the training-on free tier.
+- **Language model: Google Gemini 2.0 Flash**, called through Google AI Studio. It writes the one or two line answer from a retrieved card, and classifies intent only when the pre-router is unsure. **The model must be called in a no-training configuration**, meaning a paid tier or a data-processing setting where submitted text is not used to improve the provider's products. Member question text can contain personal detail, so it must not train a third party's models. If a no-training free configuration is not available, the PRD's cost section treats the paid data-processing tier as the baseline, not the training-on free tier.
 - **Embedding model: Google text-embedding-004**, 768 dimensions, same key and same no-training configuration. It turns each approved card and each incoming gym question into a 768-number vector for meaning search.
-- **Question text leaves the device.** The PRD states plainly: when the local pre-router cannot resolve a question, its text is sent to Google under a no-training configuration to classify or answer it. This is disclosed to the member in the app's privacy note.
+- **Question text reaches Google only when the pre-router cannot resolve it.** Every question reaches the gym's own server and is logged there. The PRD states plainly: when the pre-router cannot resolve a question, its text is sent to Google under a no-training configuration to classify or answer it. This is disclosed to the member in the app's privacy note.
 
-### 7.2 Local pre-router (added to cut calls and keep text on-device)
+### 7.2 Pre-router (server-side, added to cut calls and keep common text from the model provider)
 
-Before any model call, a small on-device keyword and pattern router runs:
+Before any model call, a small keyword and pattern router runs on the server:
 - Obvious attendance phrases ("how many days," "did I train," "attendance") route to Feature 2 without a model call.
 - Obvious balance phrases ("do I owe," "my balance," "outstanding") route to Feature 2 without a model call.
 - Obvious never-answer phrases (another member's name pattern, "refund," "cancel," "discount," "the door," symptom words) route to Feature 5 without a model call.
 - Anything the router is not confident about goes to the model classifier, then the shared-card flow.
 
-This keeps the common private and refusal cases entirely on the phone, cuts data use on small bundles, and reduces model calls.
+This keeps the common private and refusal cases away from the model provider, ships no router code to the phone, keeps one list in one place to audit, and reduces model calls.
 
 ### 7.3 Name-stripping before any model call
 
@@ -345,7 +345,7 @@ Before question text is sent to the model, the server removes or masks obvious p
 
 ### 7.4 Retrieval flow for a shared-card question
 
-1. The question passes the pre-router without a confident local match.
+1. The question passes the pre-router without a confident match.
 2. The model classifier labels it SHARED, ATTENDANCE, BALANCE, REFUSE, or OTHER.
 3. For SHARED, the server embeds the question with text-embedding-004.
 4. The server runs a tier-filtered similarity search over CardEmbedding.
@@ -394,7 +394,7 @@ Rules:
 ### 7.7 Grounding, refusal and low-confidence rules
 
 - **Grounding.** The model sees one card and is told to use only that card. The app renders the same card underneath. Temperature is 0.
-- **Refusal, two guards.** The local pre-router catches obvious never-answer phrases first. The model prompt refuses as a second guard. The training-plan boundary in rule 3 lets a plan card be read back without becoming medical advice.
+- **Refusal, two guards.** The pre-router catches obvious never-answer phrases first. The model prompt refuses as a second guard. The training-plan boundary in rule 3 lets a plan card be read back without becoming medical advice.
 - **Low confidence.** Below 0.72 similarity, the app does not call the model for an answer; it hands off. A `NO_RECORD` or `REFUSE` string also routes to handoff.
 
 ### 7.8 Rate limits, token and cost estimate
@@ -415,7 +415,7 @@ Rules:
 [Next.js App Router on Vercel free tier]
    - route handlers and server actions
    - session check on every request
-   - local pre-router -> model only if unsure
+   - pre-router -> model only if unsure
         |                         |
         | SHARED path             | ATTENDANCE / BALANCE path
         v                         v
@@ -437,7 +437,7 @@ Rules:
 
 1. The browser sends the question with the session cookie.
 2. The server verifies the session, loads the account, and confirms it is linked. It reads the member ID and tier from the linked member. An unlinked account stops here.
-3. The local pre-router runs; the model classifier runs only if the router is unsure.
+3. The pre-router runs on the server; the model classifier runs only if the router is unsure.
 4. The server branches to shared retrieval or a private query.
 5. The server returns the answer and source, and writes a QuestionLog row.
 
@@ -975,7 +975,7 @@ On a 15,000 naira renewal by a Nigerian local card, the Flutterwave fee is 2 per
 
 Realistic monthly gateway cost. If most of four hundred members renew by card at 15,000 naira, that is up to six million naira processed a month. At about 2 percent all-in, roughly 120,000 naira a month leaves the gym in fees. This is the honest figure the gym weighs when deciding whether to absorb the fee or pass it on. It is not a rounding error, and it is why the fee-bearer is an open decision, not a footnote.
 
-Model cost. With the local pre-router resolving the common private and refusal cases on-device, only genuine gym questions reach the model. On a no-training configuration this is a small per-call cost, confirmed before launch, not zero.
+Model cost. With the pre-router resolving the common private and refusal cases on the server without a model call, only genuine gym questions reach the model. On a no-training configuration this is a small per-call cost, confirmed before launch, not zero.
 
 ### 11.4 Break-even
 
@@ -1005,7 +1005,7 @@ Six risks, ordered by severity, worst first.
 |---|---|---|---|---|
 | 1 | Wrong money answer | Hits money and trust together, can start a dispute at the desk | Wrong-answer reports on balance questions in the weekly review | FR-1 and FR-2 report, never rule, always show an "as of" date; balance calculated from a ledger, never typed; no balance shown until the opening balance is verified (FR-8 flag); same-day cash and transfer entry (FR-9) |
 | 2 | Check-in non-adoption | If members do not check in, attendance stays empty and Feature 2 plus half the value never switch on. This is the product's main behavioural bet | Check-in adoption below target in the weekly numbers | Feature 3 gives an instant training-count reward; the redefined stop-building signal catches it early; version two adds nudges built on this data |
-| 3 | Member question text leaks to a third party | Sending names and personal detail to a training-on model breaks the privacy spine | Any question text found in a provider's training logs; a privacy review | No-training model configuration (7.1); local pre-router keeps common cases on-device (7.2); name-stripping before any model call (7.3) |
+| 3 | Member question text leaks to a third party | Sending names and personal detail to a training-on model breaks the privacy spine | Any question text found in a provider's training logs; a privacy review | No-training model configuration (7.1); server-side pre-router keeps common cases away from the provider (7.2); name-stripping before any model call (7.3) |
 | 4 | Half-finished or double-fired payment | A dropped connection or a repeat webhook can leave money unconfirmed or double-counted | PaymentAttempt rows stuck in PENDING; duplicate ledger attempts | Webhook is the only source of truth; idempotent on the gateway reference; idempotency key on repeat taps; PENDING state; 24-hour access hold |
 | 5 | An account is linked to the wrong member | One member's balance and attendance shown to another person | Wrong-answer or complaint reports from a newly linked account | The typed ID never grants access; the app flags mismatches and never auto-links; one account per member; every link records the staff member who made it (FR-15) |
 | 6 | Wrong starting data at manual entry | A mis-typed tier, expiry or opening balance gives confident wrong answers from day one | Wrong-answer reports clustered on newly entered members | Staged, active-members-first entry; no balance shown until verified; tier and expiry changes audited in MemberChange; opening-balance entries record the author |
