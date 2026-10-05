@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { getTestDb } from '../test-db';
-import { ATTEMPT_LIMIT, ATTEMPT_WINDOW_MS, isPaused, recordFailure } from './throttle';
+import { ATTEMPT_LIMIT, ATTEMPT_WINDOW_MS, isPaused, recordFailure, takeAttempt } from './throttle';
 import {
   RESET_TOKEN_LIFETIME_MS,
   consumeToken,
@@ -139,6 +139,25 @@ describe('the sign-in pause (stored in FailedAttempt)', () => {
       })),
     });
     expect(await isPaused(db, 'ADMIN_LOGIN', key)).toBe(false);
+  });
+});
+
+describe('the password reset email limit (needs the PASSWORD_RESET_EMAIL migration)', () => {
+  it('allows three requests per email per hour, then refuses, with one row per allowed request', async () => {
+    const key = `${run}-reset@test.invalid`;
+    expect(await takeAttempt(db, 'PASSWORD_RESET_EMAIL', key)).toBe(true);
+    expect(await takeAttempt(db, 'PASSWORD_RESET_EMAIL', key)).toBe(true);
+    expect(await takeAttempt(db, 'PASSWORD_RESET_EMAIL', key)).toBe(true);
+    expect(await takeAttempt(db, 'PASSWORD_RESET_EMAIL', key)).toBe(false);
+    expect(await takeAttempt(db, 'PASSWORD_RESET_EMAIL', key)).toBe(false);
+    expect(await db.failedAttempt.count({ where: { kind: 'PASSWORD_RESET_EMAIL', key } })).toBe(3);
+    expect(await takeAttempt(db, 'PASSWORD_RESET_EMAIL', `${key}.other`)).toBe(true);
+  });
+
+  it('counts an email with no account the same as one with an account', async () => {
+    const key = `${run}-noaccount@test.invalid`;
+    for (let i = 0; i < 3; i++) expect(await takeAttempt(db, 'PASSWORD_RESET_EMAIL', key)).toBe(true);
+    expect(await takeAttempt(db, 'PASSWORD_RESET_EMAIL', key)).toBe(false);
   });
 });
 
