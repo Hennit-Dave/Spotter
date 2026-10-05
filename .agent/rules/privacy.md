@@ -77,7 +77,9 @@ Reason: the email provider needs the address to deliver a link the person asked 
 
 There is no retention or deletion rule yet. Do not build a deletion job, an expiry sweep, or an anonymisation step for any private record. Ask the human first.
 
-Reason: the PRD leaves retention open. A deletion job built on a guess destroys records nobody agreed to destroy.
+**The one approved exception:** FailedAttempt rows older than 24 hours may be deleted. They are operational counters for the wrong-password and wrong-check-in-code pauses, not member records. A job that deletes them must filter on that table and the age only, and must not touch any other model.
+
+Reason: the PRD leaves retention open. A deletion job built on a guess destroys records nobody agreed to destroy. FailedAttempt holds an email address and a timestamp for a ten-minute window, so keeping it longer than a day serves no purpose.
 
 ## Checks before merge
 
