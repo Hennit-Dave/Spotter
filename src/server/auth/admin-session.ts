@@ -43,6 +43,7 @@ export async function endAdminSession(): Promise<void> {
 // deactivated or password-reset staff member loses access on their very next request.
 export const getAdminStaff = cache(async (): Promise<AdminStaff | null> => {
   const value = (await cookies()).get(COOKIE_NAMES.admin)?.value;
+  if (!value) return null;
   const payload = verifySession(
     value,
     getSessionSecret(),
