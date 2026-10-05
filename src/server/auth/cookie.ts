@@ -92,3 +92,12 @@ export function sessionCookieOptions(kind: SessionKind) {
     maxAge: SESSION_LIFETIME_SECONDS[kind],
   };
 }
+
+// A cookie is only good while the stored row is active and carries the same session version.
+// A password reset adds one to the stored version, which ends every other session at once.
+export function isSessionCurrent(
+  payload: Pick<SessionPayload, 'v'>,
+  row: { active: boolean; sessionVersion: number },
+): boolean {
+  return row.active && payload.v === row.sessionVersion;
+}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   COOKIE_NAMES,
   COOKIE_PATHS,
+  isSessionCurrent,
   sessionCookieOptions,
   signSession,
   verifySession,
@@ -60,5 +61,13 @@ describe('cookie settings', () => {
     expect(options.httpOnly).toBe(true);
     expect(options.sameSite).toBe('strict');
     expect(COOKIE_NAMES.admin).not.toBe(COOKIE_NAMES.member);
+  });
+});
+
+describe('isSessionCurrent', () => {
+  it('needs an active row and a matching session version', () => {
+    expect(isSessionCurrent({ v: 2 }, { active: true, sessionVersion: 2 })).toBe(true);
+    expect(isSessionCurrent({ v: 2 }, { active: false, sessionVersion: 2 })).toBe(false);
+    expect(isSessionCurrent({ v: 2 }, { active: true, sessionVersion: 3 })).toBe(false);
   });
 });
