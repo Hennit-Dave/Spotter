@@ -124,7 +124,8 @@ The PRD's own open questions (section 14) stay in the PRD and are not repeated h
 - .agent/rules/env.md is a DRAFT. Only DATABASE_URL is confirmed.
 - Proposed names, added 2026-10-05, not decided: RESEND_API_KEY (the key for sending the two account emails), EMAIL_FROM (the sender address, which depends on D24), SESSION_SECRET (signs the session cookie). Each is server-only and never carries a client-visible prefix, per secrets.md.
 - Proposed 2026-10-05: two connection strings. DATABASE_URL is Neon's pooled string, used by the app at runtime through the adapter in src/server/db.ts. DIRECT_URL is Neon's direct string, read only by prisma.config.ts for the CLI and migrations.
-- Proposed 2026-10-05 by the agent: APP_URL, the public address of the app, for the links in the two account emails. A link needs a base address the app can trust, and the request's Host header cannot be trusted for that.
+- APP_URL: approved by the human on 2026-10-05, as named. It is the public address of the app, for the links in the two account emails. A link needs a base address the app can trust, and the request's Host header cannot be trusted for that.
+- Proposed 2026-10-05: TEST_DATABASE_URL, the connection string for the Neon branch named test. Read only by database-backed tests.
 - Status: OPEN. Until the names are approved, .env.example holds only DATABASE_URL (trimmed 2026-09-30). Each other name is added when the human approves it and the feature that reads it begins.
 
 ### D18. Web app manifest in the foundation
