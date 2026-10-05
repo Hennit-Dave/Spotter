@@ -99,6 +99,10 @@ Reason: different messages tell a stranger which emails have accounts. The limit
 
 If an account exists, send one email with a single-use reset link. The link expires after one hour. Store only a hash of the token.
 
+A reset email is sent at most 3 times per email address per hour. Count every request in the FailedAttempt table with the kind PASSWORD_RESET_EMAIL and the lowercase email as the key, whether or not an account exists. Once 3 have been counted in the last hour, send nothing. The person sees the same confirmation either way, so the limit does not reveal whether the account exists. This applies to member and staff reset requests alike.
+
+Reason: the reset form is public and the free email plan allows 100 emails a day. Without a limit, anyone could use up the day's emails, or flood one person's inbox.
+
 Setting a new password ends every other session for that account, by adding one to the account's session version. It does not change the account's link. See The session.
 
 Reason: a reset link is a key to the account, so it must be short-lived and usable once. Ending other sessions locks out whoever caused the reset to be needed.
