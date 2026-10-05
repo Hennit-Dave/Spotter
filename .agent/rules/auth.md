@@ -36,6 +36,8 @@ Reason: `spt7k4q` and `SPT-7K4Q` are the same ID to a member, and they must be t
 
 Fields, all required: name, email, password, membership ID.
 
+Store the email in lowercase, trimmed, and compare it in lowercase everywhere. This applies to every email in the system, member Account and Staff alike.
+
 Create the account with status UNVERIFIED and store the normalised ID as the claim. Do not link it.
 
 The sign-up response is the same whether or not the claimed ID exists, and whether or not it is already linked.
@@ -85,7 +87,9 @@ The error for a wrong password and for an unknown email is the same message.
 
 After five wrong passwords for one email in ten minutes, refuse further tries for that email for ten minutes.
 
-Reason: different messages tell a stranger which emails have accounts. The limit makes guessing a password slow enough to be pointless.
+The count lives in the FailedAttempt table, not in server memory. Write one row per wrong try, with the kind, the key (the lowercase email) and the time. Count the rows for that kind and key in the last ten minutes. Member sign in, admin sign in and the daily check-in code each have their own kind, so a pause on one does not pause another. Clear nothing on success: the rows age out of the ten-minute window. The retention rule for these rows is in privacy.md.
+
+Reason: different messages tell a stranger which emails have accounts. The limit makes guessing a password slow enough to be pointless. Serverless memory is lost between requests, so only a stored count holds.
 
 ## Password reset
 
@@ -93,13 +97,13 @@ Reason: different messages tell a stranger which emails have accounts. The limit
 
 If an account exists, send one email with a single-use reset link. The link expires after one hour. Store only a hash of the token.
 
-Setting a new password ends every other session for that account. It does not change the account's link.
+Setting a new password ends every other session for that account, by adding one to the account's session version. It does not change the account's link. See The session.
 
 Reason: a reset link is a key to the account, so it must be short-lived and usable once. Ending other sessions locks out whoever caused the reset to be needed.
 
 ## Exactly two emails
 
-The app sends two kinds of email and no others: email verification and password reset. Each is sent only because the person just asked for it.
+The app sends two kinds of email and no others: email verification and password reset. Each is sent only because the person just asked for it. A staff or owner password reset is the same reset email.
 
 No welcome email, no receipts by email, no reminders, no nudges, no marketing.
 
@@ -117,7 +121,9 @@ Reason: every SMS costs money the project does not have.
 
 ## The session
 
-The session is a signed httpOnly cookie carrying the account ID.
+The session is a signed httpOnly cookie carrying the account ID and the account's session version.
+
+On every request, the server also compares the cookie's session version with the one stored on the account. A mismatch means the session has ended: treat the person as signed out. A password reset adds one to the stored version, which ends every other session at once.
 
 On every request, the server loads the account and reads its member link. A private read uses that member link and nothing else. If the link is empty, there is no private read.
 
@@ -125,10 +131,20 @@ Do not put the account ID or member ID in local storage, a client-readable cooki
 
 Reason: the member link is the only thing staff have vouched for. Reading it fresh on the server means an unlinked or rejected account can never act as a member.
 
-## Staff and owner sign in separately
+## Staff and owner sign in with email and password
 
-Staff and owner screens use their own sign-in and their own session, and check the staff role before any read or write. A member session never reaches an admin route.
+Decided 2026-10-05 (D25). Staff and owner sign in with email and password, the same way as members. Their screens live under /admin, with their own sign in and reset screens.
 
-How staff sign in is not decided. Ask the human before building it.
+**There is no open sign-up for staff.** The owner creates every staff account, on the admin staff screen, with a name, an email, a phone, a WhatsApp number and a role, OWNER or STAFF. Staff never create their own account. The first owner row is inserted by the human, because no owner exists yet to create it.
 
-Reason: admin screens read across members and write records. They must never share a session with the member app.
+**A new staff account has no password.** The password hash is empty until the staff member sets one through the reset link: they ask for it on the admin Forgot password screen. Sign in is refused while the hash is empty, with the same message as any other failed sign in.
+
+**Same hashing, same reset link.** Staff passwords use the same argon2 hash, the same minimum length, the same single-use hashed reset token with a one-hour life, and the same wrong-password pause as members. They use the shared code in src/server/auth/. Do not copy it.
+
+**Staff emails are not verified by link.** The owner typed the address, and a reset link proves the person controls the inbox.
+
+**The admin session is its own cookie.** It is a signed httpOnly cookie with a different name from the member cookie, set with Path=/admin. Its signed payload carries the kind admin, the staff ID and the staff session version. A member cookie never passes an admin check, and an admin cookie never passes a member check.
+
+**The role is checked before every admin read or write.** On every admin request the server loads the staff row fresh, confirms the account is active, compares the session version, and checks the role. Owner-only actions (approve cards, enter the opening balance, change tier or expiry, enter cash and transfers, create or deactivate staff, read the weekly review) need OWNER. A STAFF role cannot reach them. Deactivating a staff member, or a password reset, ends their sessions.
+
+Reason: admin screens read across members and write records. They must never share a session with the member app, and a role stored only in the cookie could not be taken back when someone leaves. Reading the row fresh on each request means a removed or demoted person loses access immediately.
