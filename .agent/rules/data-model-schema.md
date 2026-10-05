@@ -108,6 +108,7 @@ enum AttemptKind {
   MEMBER_LOGIN
   ADMIN_LOGIN
   CHECK_IN_CODE
+  PASSWORD_RESET_EMAIL
 }
 
 // PRIVATE MODEL. A sign-in identity, not a member. Never embedded.
