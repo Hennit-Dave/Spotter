@@ -104,13 +104,20 @@ enum EmailTokenType {
   RESET
 }
 
+enum AttemptKind {
+  MEMBER_LOGIN
+  ADMIN_LOGIN
+  CHECK_IN_CODE
+}
+
 // PRIVATE MODEL. A sign-in identity, not a member. Never embedded.
 // Reaches member records only through memberId, which only staff set.
 model Account {
   id                  String        @id @default(cuid())
   name                String
-  email               String        @unique
+  email               String        @unique // stored lowercase and trimmed
   passwordHash        String
+  sessionVersion      Int           @default(0) // add one to end every other session
   status              AccountStatus @default(UNVERIFIED)
   emailVerifiedAt     DateTime?
   claimedMembershipId String        // normalised to SPT-XXXX; a claim, never used to read records
@@ -130,18 +137,35 @@ model Account {
 }
 
 // PRIVATE MODEL. Single-use links for the two account emails. Stores a hash, never the token.
+// Belongs to exactly one of an Account or a Staff row. A CHECK constraint in the raw
+// migration enforces that. Staff tokens are RESET only.
 model EmailToken {
   id          String          @id @default(cuid())
-  accountId   String
+  accountId   String?
+  staffId     String?
   type        EmailTokenType
   tokenHash   String          @unique
   expiresAt   DateTime
   usedAt      DateTime?
   createdAt   DateTime        @default(now())
 
-  account     Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account     Account?        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  staff       Staff?          @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
   @@index([accountId])
+  @@index([staffId])
+}
+
+// PRIVATE MODEL. Operational counter for the wrong-password and wrong-check-in-code pauses.
+// Not a member record. Rows older than 24 hours may be deleted (privacy.md).
+// key is the lowercase email for the two login kinds.
+model FailedAttempt {
+  id         String      @id @default(cuid())
+  kind       AttemptKind
+  key        String
+  createdAt  DateTime    @default(now())
+
+  @@index([kind, key, createdAt])
 }
 
 // PRIVATE MODEL. Fetched by member ID only. Never embedded.
@@ -187,10 +211,12 @@ model MemberChange {
 model Staff {
   id               String        @id @default(cuid())
   name             String
+  email            String        @unique // stored lowercase and trimmed
+  passwordHash     String?       // null until the staff member sets one by reset link
+  sessionVersion   Int           @default(0) // add one to end every other session
   phone            String        @unique
   whatsappNumber   String
   role             StaffRole     @default(STAFF)
-  // Staff sign-in fields are not decided. Add them when auth.md settles it.
   active           Boolean       @default(true)
   createdAt        DateTime      @default(now())
 
@@ -202,6 +228,7 @@ model Staff {
   linkedAccounts   Account[]     @relation("AccountLinker")
   dutyRows         Duty[]
   memberChanges    MemberChange[]
+  tokens           EmailToken[]
 }
 
 model Card {
@@ -371,7 +398,11 @@ Raw migration needed after the schema migration
 CREATE UNIQUE INDEX one_active_duty ON "Duty" (active) WHERE active = true;
 
 
-Prisma cannot express a partial unique index, so this runs as a raw SQL migration.
+ALTER TABLE "EmailToken" ADD CONSTRAINT email_token_one_owner
+  CHECK (("accountId" IS NULL) <> ("staffId" IS NULL));
+
+
+Prisma cannot express a partial unique index or a CHECK constraint, so these run as a raw SQL migration. The CHECK makes every EmailToken belong to exactly one of an Account or a Staff row.
 
 Every question writes a log row
 
