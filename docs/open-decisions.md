@@ -156,7 +156,7 @@ The PRD's own open questions (section 14) stay in the PRD and are not repeated h
 ### D25. Staff and owner sign-in
 - auth.md: staff and owner screens use their own sign-in and session, with a role check before any read or write. How staff sign in is not decided. The Staff model has no sign-in fields.
 - Blocks: every admin screen, including desk linking of new accounts, and the single schema migration. The migration is not proposed until this is settled.
-- Status: OPEN
+- Status: DECIDED 2026-10-05. Staff and owner sign in with email and password, the same way as members. There is no open sign-up for staff: the owner creates staff accounts. Each has a role, OWNER or STAFF. They use the same argon2 hashing and the same single-use reset link. The admin session is its own signed httpOnly cookie, separate from the member session, and the role is checked before every admin read or write. Still to apply: .agent/rules/auth.md and the Staff model in data-model-schema.md.
 
 ---
 
