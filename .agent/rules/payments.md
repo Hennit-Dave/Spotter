@@ -1,6 +1,6 @@
 ---
 trigger: glob
-globs: src/server/payments/**, src/server/api/payments/**
+globs: src/server/payments/**, src/app/api/webhooks/flutterwave/**
 ---
 
 
