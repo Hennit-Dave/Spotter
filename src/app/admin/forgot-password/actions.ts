@@ -9,10 +9,13 @@ import {
   normaliseEmail,
   sendAccountEmail,
 } from '@/server/auth/email';
+import { takeAttempt } from '@/server/auth/throttle';
 import { RESET_TOKEN_LIFETIME_MS, issueToken } from '@/server/auth/tokens';
 
-// The person always gets the same confirmation. The lookup and the email run after the
-// response is sent, so how long the page takes does not reveal whether the email has an account.
+// The person always gets the same confirmation. The limit, the lookup and the email run after
+// the response is sent, so neither the page's timing nor its message reveals whether the email
+// has an account. At most three emails go out per email address per hour, counted whether or
+// not an account exists.
 export async function requestPasswordReset(formData: FormData): Promise<void> {
   const raw = formData.get('email');
   const email = normaliseEmail(typeof raw === 'string' ? raw : '');
@@ -21,6 +24,7 @@ export async function requestPasswordReset(formData: FormData): Promise<void> {
     after(async () => {
       try {
         const db = getDb();
+        if (!(await takeAttempt(db, 'PASSWORD_RESET_EMAIL', email))) return;
         const staff = await db.staff.findUnique({
           where: { email },
           select: { id: true, active: true },
