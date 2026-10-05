@@ -14,13 +14,17 @@ Read secrets.md for how these values are handled. This file only names them.
 
 | Name | Status | What it is for | Source |
 |---|---|---|---|
-| DATABASE_URL | CONFIRMED | PostgreSQL connection string, with pgvector in the same database. | PRD 8.5, the Prisma datasource |
+| DATABASE_URL | CONFIRMED | Neon pooled PostgreSQL connection string (host has -pooler), with pgvector in the same database. The app uses it at runtime through the adapter in src/server/db.ts. | PRD 8.5, the Prisma datasource |
+| DIRECT_URL | PROPOSED | Neon direct connection string. Read only by prisma.config.ts, for the CLI and migrations. The app never reads it. | D17 |
+| RESEND_API_KEY | PROPOSED | Key for sending the two account emails. | auth.md |
+| EMAIL_FROM | PROPOSED | Sender address for the two account emails. Depends on the sending domain in D24. | auth.md |
+| APP_URL | PROPOSED | Public address of the app, used to build the verify and reset links. The agent added this name because a link needs a trusted base address; it was not on the human's list. | auth.md |
 | GEMINI_API_KEY | PROPOSED | Key for the Gemini no-training configuration, for both answers and embeddings. | PRD 7.1 |
 | SESSION_SECRET | PROPOSED | Signs the httpOnly session cookie. | PRD 8.3, auth.md |
 | FLUTTERWAVE_SECRET_KEY | PROPOSED | Server key used to initiate and verify payments. | PRD 6.5, payments.md |
 | FLUTTERWAVE_WEBHOOK_SECRET_HASH | PROPOSED | Value used to check the webhook signature. | PRD 6.5, payments.md |
 
-The PRD does not settle whether staff and owner sessions need a separate signing secret. Ask the human. Do not add one.
+SESSION_SECRET signs both the member and the admin cookie. The payload carries the kind, so one secret serves both (folder-map.md). Do not add a second secret.
 
 ## Rules
 
