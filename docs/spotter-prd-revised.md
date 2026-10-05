@@ -278,7 +278,7 @@ Medical and training-plan boundary. The app may repeat what an approved training
 **FR-7. Approve or reject drafted cards.** The owner sees each drafted card version and approves or rejects it. No card reaches a member until approved. Approval stamps the approver and a last-confirmed date. Approval and embedding are one unit: if the embedding step fails, approval does not complete (see section 9.5).
 - Acceptance: an unapproved card never appears in member retrieval. An APPROVED card always has a matching embedding. Fail if a draft is retrievable, or if an APPROVED card has no embedding.
 
-**FR-8. Maintain the member list.** The owner sets each member's tier, expiry date, and opening balance, with a note on the opening balance. Every change to tier or expiry writes a MemberChange audit row (old value, new value, field, author, timestamp). This is how a paid upgrade takes effect.
+**FR-8. Maintain the member list.** Once a member exists, only the owner changes the member's tier, expiry date or opening balance, with a note on the opening balance. Staff cannot change them. Every change to tier or expiry writes a MemberChange audit row (old value, new value, field, author, timestamp). This is how a paid upgrade takes effect.
 - Acceptance: an opening balance change writes a ledger charge with the owner as author and a note. A tier or expiry change writes a MemberChange row. Fail if a balance can be typed directly onto a member, or if a tier or expiry change leaves no audit row.
 
 **FR-9. Enter cash and transfer payments.** The owner records a cash or transfer payment with amount, date, method, and member. The typist is recorded. In-app card payments cannot be edited here. Same-day entry is required so the balance answer stays honest (see section 2).
@@ -295,7 +295,7 @@ Medical and training-plan boundary. The app may repeat what an approved training
 **FR-12. Set the daily check-in code.** Staff set today's four-digit code once per day.
 - Acceptance: one active CheckInCode exists per day. A second set replaces the value and logs the change.
 
-**FR-13. Create a member and assign a membership ID.** Staff create a member record with name, tier, expiry and optional phone. The system generates the membership ID in the form SPT- plus four characters, unique and permanent. Staff never type the ID.
+**FR-13. Create a member and assign a membership ID.** Staff and the owner can both create a member record with name, initial tier, initial expiry and optional phone. Creating a member does not set the opening balance. The system generates the membership ID in the form SPT- plus four characters, unique and permanent. Nobody types the ID.
 - Acceptance: every new member gets a unique ID in the right format. A collision is retried, never saved twice. An ID cannot be edited or reused.
 
 **FR-14. Record a manual check-in.** Staff record a check-in for a member whose phone is dead. The entry is marked source MANUAL with the staff ID, one row per member per calendar day.
