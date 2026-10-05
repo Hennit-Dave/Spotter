@@ -12,11 +12,13 @@ Read database-changes.md before proposing any change to this schema.
 
 ## Which models are private
 
-Private: Account, EmailToken, Member, MemberChange, Attendance, LedgerEntry, PaymentAttempt, QuestionLog, WrongAnswerReport.
+Private: Account, EmailToken, FailedAttempt, Member, MemberChange, Attendance, LedgerEntry, PaymentAttempt, QuestionLog, WrongAnswerReport.
 Shared: Card, CardVersion, CardEmbedding, CheckInCode.
 Staff: Staff, Duty.
 
-Every private model carries a comment in the schema saying how it is fetched. Member records are fetched by the linked member ID only. Account and EmailToken are fetched for the signed-in account only.
+Staff now holds credentials: an email, a password hash and a session version. Staff is admin-only, read and written only in admin routes after the role check, and never embedded. Only the handoff may show a staff member's name, WhatsApp number or phone to a member, and it shows nothing else from the row.
+
+Every private model carries a comment in the schema saying how it is fetched. Member records are fetched by the linked member ID only. Account and EmailToken are fetched for the signed-in account only. FailedAttempt is counted by kind and key only, by the sign-in and check-in code, and is never shown to anyone.
 
 Reason: the agent must be able to tell at a glance which side of the line a model sits on.
 
