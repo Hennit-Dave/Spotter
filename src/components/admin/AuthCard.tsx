@@ -7,6 +7,17 @@ export interface AuthNotice {
   text: string;
 }
 
+export function Notice({ notice }: { notice: AuthNotice }) {
+  return (
+    <p
+      className={`${styles.notice} ${notice.tone === 'error' ? styles.error : styles.info}`}
+      role={notice.tone === 'error' ? 'alert' : 'status'}
+    >
+      {notice.text}
+    </p>
+  );
+}
+
 export function AuthCard({
   title,
   notice,
@@ -19,14 +30,7 @@ export function AuthCard({
   return (
     <main className={styles.page}>
       <h1 className={styles.title}>{title}</h1>
-      {notice && (
-        <p
-          className={`${styles.notice} ${notice.tone === 'error' ? styles.error : styles.info}`}
-          role={notice.tone === 'error' ? 'alert' : 'status'}
-        >
-          {notice.text}
-        </p>
-      )}
+      {notice && <Notice notice={notice} />}
       {children}
     </main>
   );
@@ -37,11 +41,17 @@ export function TextField({
   label,
   type,
   autoComplete,
+  required = true,
+  min,
+  maxLength,
 }: {
   name: string;
   label: string;
-  type: 'email' | 'password' | 'text';
+  type: 'email' | 'password' | 'text' | 'date' | 'tel';
   autoComplete: string;
+  required?: boolean;
+  min?: string;
+  maxLength?: number;
 }) {
   return (
     <div className={styles.field}>
@@ -53,9 +63,36 @@ export function TextField({
         name={name}
         type={type}
         autoComplete={autoComplete}
-        required
+        required={required}
+        min={min}
+        maxLength={maxLength}
         className={styles.input}
       />
+    </div>
+  );
+}
+
+export function SelectField({
+  name,
+  label,
+  options,
+}: {
+  name: string;
+  label: string;
+  options: Array<{ value: string; label: string }>;
+}) {
+  return (
+    <div className={styles.field}>
+      <label htmlFor={name} className={styles.label}>
+        {label}
+      </label>
+      <select id={name} name={name} required className={styles.input}>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

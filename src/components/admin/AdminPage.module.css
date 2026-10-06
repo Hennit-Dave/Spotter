@@ -1,0 +1,75 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  font-family: var(--type-headline-small-dmsans-font-family);
+  font-size: var(--type-headline-small-dmsans-font-size);
+  font-weight: var(--type-headline-small-dmsans-font-weight);
+  line-height: var(--type-headline-small-dmsans-line-height);
+  letter-spacing: var(--type-headline-small-dmsans-letter-spacing);
+  color: var(--color-on-surface);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sectionTitle {
+  font-family: var(--type-title-medium-dmsans-font-family);
+  font-size: var(--type-title-medium-dmsans-font-size);
+  font-weight: var(--type-title-medium-dmsans-font-weight);
+  line-height: var(--type-title-medium-dmsans-line-height);
+  letter-spacing: var(--type-title-medium-dmsans-letter-spacing);
+  color: var(--color-on-surface);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface-container);
+  border-radius: var(--radius-md);
+}
+
+.itemName {
+  font-family: var(--type-title-small-dmsans-font-family);
+  font-size: var(--type-title-small-dmsans-font-size);
+  font-weight: var(--type-title-small-dmsans-font-weight);
+  line-height: var(--type-title-small-dmsans-line-height);
+  letter-spacing: var(--type-title-small-dmsans-letter-spacing);
+  color: var(--color-on-surface);
+}
+
+.itemMeta {
+  font-family: var(--type-body-medium-dmsans-font-family);
+  font-size: var(--type-body-medium-dmsans-font-size);
+  font-weight: var(--type-body-medium-dmsans-font-weight);
+  line-height: var(--type-body-medium-dmsans-line-height);
+  letter-spacing: var(--type-body-medium-dmsans-letter-spacing);
+  color: var(--color-on-surface-variant);
+}

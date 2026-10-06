@@ -118,3 +118,7 @@
 .link:focus-visible {
   outline: medium solid var(--color-secondary);
 }
+
+select.input:focus-visible {
+  outline: medium solid var(--color-secondary);
+}
