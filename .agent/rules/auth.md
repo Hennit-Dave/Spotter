@@ -28,47 +28,56 @@ Reason: random IDs cannot be guessed by trying the next number. The removed char
 
 ## Sign up
 
-Fields, all required: name, email, password, phone, and one question: "Already a member at the gym?", answered Yes or No.
+Fields, all required: name, email, phone, and one question: "Already a member at the gym?", answered Yes or No. Sign-up collects no password.
 
 Store the email in lowercase, trimmed, and compare it in lowercase everywhere. This applies to every email in the system, member Account and Staff alike.
 
 The phone is stored as international digits only, by the rule in data-model.md. A phone that cannot be placed is rejected with a message. That message says nothing about whether any account exists.
 
-Create the account with status UNVERIFIED, holding the name, phone and answer. Create no member.
+Create the account with status UNVERIFIED, holding the name, phone and answer, with no password. Create no member.
 
-Passwords are at least 8 characters and at most 1,000, with no rules about mixing character types. Store them only as an argon2id hash, with a memory cost of 19,456 KiB, a time cost of 2 and a parallelism of 1. Never log a password or return it from any endpoint. These settings apply to members and staff alike and live in one place, src/server/auth/password.ts. Change them only with the human's approval.
-
-When there is no stored hash, such as an unknown email or a staff account that has not set a password, still do the same hashing work against a throwaway value before refusing. The response time must not reveal whether the account exists.
-
-**Signing up with an email that already has an account.** If the email belongs to an UNVERIFIED account, replace that account's name, phone, answer and password with the new ones, and send a new verification link, inside the limit below. If the email belongs to an ACTIVE account, change nothing and send nothing. An ACTIVE account's email is never replaced. In every case the sign-up response is the same as for a brand new email.
+**Signing up with an email that already has an account.** If the email belongs to an UNVERIFIED account, update that account's name, phone and answer, and send a fresh verification link, inside the limit below. An ACTIVE account is never touched: change nothing and send nothing. In every case the sign-up response is the same as for a brand new email. Nobody can set or replace a password by signing up, so signing up with someone else's unverified email gives no way into that account.
 
 **Cleaning up.** Each time a new sign-up is written, delete UNVERIFIED accounts older than 2 months. There is no scheduled job. The rule and its limits are in privacy.md.
 
-Reason: a sign-up page that says "that email already has an account" tells a stranger which emails are members. Replacing an unverified account lets a person who mistyped, or never got the first email, try again. Length matters more than character rules, and character rules push people toward passwords they forget. The 1,000 character ceiling stops one enormous input from tying up the server.
+Reason: a sign-up page that says "that email already has an account" tells a stranger which emails are members. Updating an unverified account lets a person who mistyped, or never got the first email, try again. Because the password is chosen only by the person holding the link in the inbox, nobody else can take over an account by signing up first.
+
+## Passwords
+
+Passwords are at least 8 characters and at most 1,000, with no rules about mixing character types. Store them only as an argon2id hash, with a memory cost of 19,456 KiB, a time cost of 2 and a parallelism of 1. Never log a password or return it from any endpoint. These settings apply to members and staff alike and live in one place, src/server/auth/password.ts. Change them only with the human's approval.
+
+An account's first password is set only by using its verification link. After that, a password changes only through a reset link. No other path sets a password.
+
+When there is no stored hash, such as an unknown email, an UNVERIFIED account, or a staff account that has not set a password, still do the same hashing work against a throwaway value before refusing a sign in. The response time must not reveal whether the account exists.
+
+Reason: length matters more than character rules, and character rules push people toward passwords they forget. The 1,000 character ceiling stops one enormous input from tying up the server.
 
 ## Verify the email
 
-After sign up, send one verification email containing a single-use link. When the link is used, do these in one transaction:
+After sign up, send one verification email containing a single-use link. The link opens a page where the person sets their password. The page also shows the details they gave at sign-up, the name, phone and answer, so they can check them or correct them. Showing the details needs a valid, unused, unexpired link and nothing else.
 
-1. Set the account to ACTIVE and record the verification time.
-2. Create the Member: the account's name and phone, the account's answer as claimsExistingMember, a generated membership ID, no paid time, and the opening-balance flag set only if the answer was No. A Yes answer leaves it unset.
-3. Set the account's member link to the new member.
+When the person submits the page, do these in one transaction, using the details as submitted:
 
-If any step fails, none persists. Using the link a second time creates no second member: a used link does nothing.
+1. Use the link. It works once.
+2. Set the account's password hash, set the status to ACTIVE, and record the verification time. Store any corrected name, phone and answer on the account.
+3. Create the Member: the account's name and phone, the account's answer as claimsExistingMember, a generated membership ID, no paid time, and the opening-balance flag set only if the answer was No. A Yes answer leaves it unset.
+4. Set the account's member link to the new member.
+
+If any step fails, none persists. Using the link a second time does nothing: no second member, and the password cannot be set again. Validate the password and the details before the transaction starts, and send the person back to the page with a message if they are wrong. The link is only used when everything is accepted.
 
 The link expires after 24 hours. Store only a hash of the token. A used or expired link does nothing except offer to send a new one.
 
-**A verification email is sent at most 3 times per email address per hour,** counting both the first and every resend. Count every request in the FailedAttempt table with the kind VERIFICATION_EMAIL and the lowercase email as the key, whether or not an account exists. Once 3 have been counted in the last hour, send nothing. The person sees the same confirmation either way.
+**A verification email is sent at most 3 times per email address per hour,** counting both the first and every request for a fresh link. Count every request in the FailedAttempt table with the kind VERIFICATION_EMAIL and the lowercase email as the key, whether or not an account exists. Once 3 have been counted in the last hour, send nothing. The person sees the same confirmation either way.
 
-An unverified account may sign in, but sees only a screen asking it to verify, with a button to resend the link. It reaches no card and no record, and cannot check in or pay.
+An UNVERIFIED account has no password and cannot sign in. It has no session, so it reaches no card and no record, and cannot check in or pay. A person who needs a fresh link asks for one from the resend form or by signing up again with the same email, and gets the same confirmation either way.
 
-Reason: verification proves the person owns the inbox, which is what makes a password reset by email safe later. The limit protects the free email plan, which allows 100 emails a day, from being used up by one person.
+Reason: verification proves the person owns the inbox, which is what makes a password reset by email safe later. Choosing the password here, rather than at sign-up, means only the person with access to the inbox can ever set it. The limit protects the free email plan, which allows 100 emails a day, from being used up by one person.
 
 ## Sign in
 
 Sign in with email and password.
 
-The error for a wrong password and for an unknown email is the same message.
+The error for a wrong password, for an unknown email and for an account with no password yet is the same message.
 
 After five wrong passwords for one email in ten minutes, refuse further tries for that email for ten minutes.
 
@@ -80,7 +89,7 @@ Reason: different messages tell a stranger which emails have accounts. The limit
 
 "Forgot password" asks for an email address. The confirmation message is the same whether or not an account exists.
 
-If an account exists, send one email with a single-use reset link. The link expires after one hour. Store only a hash of the token.
+If an ACTIVE account exists, send one email with a single-use reset link. An UNVERIFIED account has no password to reset: send nothing, and give the same confirmation. It uses its verification link instead. The link expires after one hour. Store only a hash of the token.
 
 A reset email is sent at most 3 times per email address per hour. Count every request in the FailedAttempt table with the kind PASSWORD_RESET_EMAIL and the lowercase email as the key, whether or not an account exists. Once 3 have been counted in the last hour, send nothing. The person sees the same confirmation either way, so the limit does not reveal whether the account exists. This applies to member and staff reset requests alike.
 
