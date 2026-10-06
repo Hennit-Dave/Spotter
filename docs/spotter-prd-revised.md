@@ -24,7 +24,7 @@ The boundary Spotter draws: it answers from recorded payments only. A transfer t
 
 1. Reduce the questions that reach the desk. Measured against a one-week paper tally of desk questions taken before launch, compared to the desk-question rate after launch. The pre-launch tally is a required step (see 3.1).
 2. Give every member a correct, sourced answer about their own attendance and balance without a staff member opening a ledger. Measured as private-record questions answered in-app, paired with the wrong-answer-report rate on those answers.
-3. Make in-building check-in a habit so attendance data exists to answer from. Measured as members with at least one app check-in in the last seven days. This is the product's main unproven behavioural bet (see section 4 and risk 2).
+3. Make in-building check-in a habit so attendance data exists to answer from. Measured as paid members with at least one app check-in in the last seven days. This is the product's main unproven behavioural bet (see section 4 and risk 2).
 4. Collect in-app payments that settle straight into the gym account with a confirmed receipt. Measured as payment success rate (see section 12 for the exact denominator).
 5. Build a clean record of every question, answer, gap and payment so version two can add reminders. Measured by the presence of complete logs, not a rate.
 
@@ -48,7 +48,7 @@ Chidinma, 27, office worker, trains most weekday evenings. Phone: an inexpensive
 
 How often she opens the app is not yet known. The design hopes she checks in on most visits, since check-in is what makes her attendance answers true, and asks a real question a few times a month. That check-in habit is an assumption, not a measured fact. It is the single behaviour the whole attendance half of the product rests on. If members do not check in, Feature 2 stays empty and half the value never switches on. This is why check-in adoption is a stop-building signal in section 12 and a top risk in section 13, and why Feature 3 gives an instant, visible reward for checking in.
 
-How she gets in: she signs up with her name, email, password and phone, and answers one question, "Already a member at the gym?". She confirms her email and Spotter creates her record and her membership ID at once. If she said Yes, she sees no balance until the owner has entered it, and the app hands her to the desk until then. If she said No, she starts on the free plan with nothing outstanding and sees that at once.
+How she gets in: she signs up with her name, email and phone, and answers one question, "Already a member at the gym?". She opens the link Spotter emails her, checks her details, and sets her password. Spotter then creates her record and her membership ID at once. If she said Yes, she sees no balance until the owner has entered it, and the app hands her to the desk until then. If she said No, she starts on the free plan with nothing outstanding and sees that at once.
 
 ### The owner (record supplier, not a user)
 
@@ -70,7 +70,7 @@ Draft and edit cards for the owner to approve, see which paid members still need
 
 ### Account screens (not features)
 
-Open sign-up with an email check. Anyone can create an account. When the person verifies their email, the system creates their member record. There is no desk linking step. The screens are: landing, sign up, verify email, log in, and forgot password. See FR-16 to FR-20.
+Open sign-up with an email check. Anyone can create an account with a name, email and phone. The person sets their password by using the link emailed to them, and that is when the system creates their member record. There is no desk linking step. The screens are: landing, sign up, verify email (set password), log in, and forgot password. See FR-16 to FR-20.
 
 ### Plans and payment
 
@@ -233,7 +233,7 @@ Medical and training-plan boundary. The app may repeat what an approved training
 2. The app calls the pay-initiate endpoint with the purpose, a client idempotency key and, for a balance, the amount. For a renewal the server uses the monthly price and ignores any amount from the client. (Idempotency key means a value that makes a repeated tap reuse the same payment instead of starting a second one.)
 3. The server creates a PaymentAttempt in status INITIATED, calls the gateway, and returns the gateway checkout link.
 4. The member pays on the gateway page.
-5. The gateway calls the Spotter webhook. The server verifies the signature, then in one transaction (with the member row locked) checks whether a ledger row or member change already exists for this attempt. If one exists, it acknowledges and does nothing. If the paid amount differs from the attempt's amount, it marks the attempt NEEDS_REVIEW and extends nothing. Otherwise it marks the attempt SUCCESS. For a renewal it writes a ledger charge and a ledger payment for the month, extends paid-until by one calendar month, and writes one audit row with no author and the attempt. For a balance it writes the ledger payment only.
+5. The gateway calls the Spotter webhook. The server verifies the signature, then in one transaction (with the member row locked) checks whether a ledger row or member change already exists for this attempt. If one exists, it acknowledges and does nothing. If the paid amount differs from the attempt's amount, it writes the ledger payment for the amount received with no charge, extends nothing, and marks the attempt NEEDS_REVIEW. Otherwise it marks the attempt SUCCESS. For a renewal it writes a ledger charge and a ledger payment for the month, extends paid-until by one calendar month, and writes one audit row with no author and the attempt. For a balance it writes the ledger payment only.
 6. The receipt appears once the webhook confirms. After a first payment the app says the desk will issue the access card. Paying does not open the gym door.
 
 **Webhook is the only source of truth.** The app never marks a payment done because the phone showed a success screen.
@@ -257,7 +257,7 @@ Medical and training-plan boundary. The app may repeat what an approved training
 **Acceptance.**
 - No card Payment ledger row exists without a verified webhook.
 - A verified renewal webhook writes the charge, the payment, the one-month extension and the audit row together or not at all. A balance payment never changes paid time.
-- A webhook whose amount does not match extends nothing and marks the attempt for review.
+- A webhook whose amount does not match writes the payment to the ledger with no charge, extends nothing, and marks the attempt for the owner to review.
 - Two payments arriving at once both add their month.
 - Two fast taps produce one PaymentAttempt, not two.
 - Two identical webhooks for one reference produce one ledger row, not two.
@@ -329,17 +329,17 @@ Medical and training-plan boundary. The app may repeat what an approved training
 **FR-16. Landing.** A person who is not signed in sees what Spotter is, a Create account button, and a Log in button.
 - Acceptance: the landing page loads with no data calls and no images beyond the logo.
 
-**FR-17. Sign up.** Name, email, password of at least 8 characters, phone, and one question: "Already a member at the gym?" The phone is stored as international digits only. The account is created unverified and has no member. Signing up with an unverified account's email replaces its details and sends a new link, within the limit in FR-18. Signing up with an active account's email changes nothing. The response is the same in every case. Each sign-up also deletes unverified accounts older than 2 months.
-- Acceptance: a new email, an unverified email and an active email return the same message. An active account is never changed by a sign-up.
+**FR-17. Sign up.** Name, email, phone, and one question: "Already a member at the gym?" Sign-up collects no password. The phone is stored as international digits only. The account is created unverified, with no password and no member. Signing up with an unverified account's email updates its details and sends a fresh link, within the limit in FR-18. Signing up with an active account's email changes nothing. The response is the same in every case. Each sign-up also deletes unverified accounts older than 2 months.
+- Acceptance: a new email, an unverified email and an active email return the same message. An active account is never changed by a sign-up. No sign-up sets or replaces a password.
 
-**FR-18. Verify email.** One email with a single-use link that expires after 24 hours. Using it, in one transaction, makes the account active, creates the member with its membership ID, and links them. Someone who answered No starts with nothing outstanding and their balance shows at once. A verification email is sent at most 3 times per email address per hour, with the same confirmation either way.
-- Acceptance: a used or expired link changes nothing. Using a link twice creates one member. The app sends no email other than this one and the reset email, and a fourth request in an hour sends nothing.
+**FR-18. Verify email and set a password.** One email with a single-use link that expires after 24 hours. The link opens a page that shows the details given at sign-up, name, phone and answer, for the person to check or correct, and asks them to set a password of at least 8 characters. Submitting it, in one transaction, uses the link, sets the password, makes the account active, creates the member with its membership ID from the details as corrected, and links them. Someone who answered No starts with nothing outstanding and their balance shows at once. A verification email is sent at most 3 times per email address per hour, with the same confirmation either way.
+- Acceptance: a used or expired link changes nothing and shows nothing about the account. Using a link twice creates one member and cannot set the password again. An account's first password can only be set by using its verification link. A wrong password or detail leaves the link unused. The app sends no email other than this one and the reset email, and a fourth request in an hour sends nothing.
 
-**FR-19. Log in and password reset.** Log in with email and password. Five wrong tries in ten minutes pause that email for ten minutes. Forgot password sends one single-use link that expires after one hour, and the confirmation message is the same whether or not the account exists. A new password ends every other session.
+**FR-19. Log in and password reset.** Log in with email and password. Five wrong tries in ten minutes pause that email for ten minutes. Forgot password sends, for an active account, one single-use link that expires after one hour, and the confirmation message is the same whether or not the account exists. A new password ends every other session.
 - Acceptance: an unknown email and a wrong password show the same error. A reset link works once.
 
-**FR-20. Verify screen.** An account that has not verified its email sees one message asking it to verify, a resend button, and a way to sign out.
-- Acceptance: such an account reaches no card, no private record, no check-in and no payment.
+**FR-20. Check your email.** After sign up the person sees one message asking them to check their email, with a form to ask for a fresh link. An account that has not verified has no password and cannot sign in.
+- Acceptance: an unverified account has no session and reaches no card, no private record, no check-in and no payment.
 
 ## 7. AI and AI Related Tools and Solutions
 
@@ -463,9 +463,9 @@ Rules:
 
 ### 8.3 Auth: self sign-up with automatic membership
 
-- Anyone can sign up with name, email, password, phone and the answer to "Already a member at the gym?". The account starts unverified and has no member.
-- The person verifies their email through a single-use link. In one transaction the system makes the account active, creates the member with a generated permanent membership ID such as SPT-7K4Q from 31 unambiguous characters, and links them. There is no desk linking.
-- Signing up again with an unverified account's email replaces its details. An active account's email is never replaced. Unverified accounts older than 2 months are deleted when a new sign-up is written.
+- Anyone can sign up with name, email, phone and the answer to "Already a member at the gym?". The account starts unverified, with no password and no member.
+- The person opens the single-use emailed link, checks their details and sets their password. In one transaction the system makes the account active and creates the member with a generated permanent membership ID such as SPT-7K4Q from 31 unambiguous characters, and links them. There is no desk linking.
+- Signing up again with an unverified account's email updates its details and sends a fresh link. An active account is never touched. Unverified accounts older than 2 months are deleted when a new sign-up is written.
 - Log in is email plus password. Passwords are stored only as argon2 hashes.
 - Password reset is by a single-use emailed link. Verification and reset emails are each limited to 3 per address per hour.
 - The session is a signed httpOnly cookie carrying the account ID. The server reads the member link fresh on every request.
@@ -646,12 +646,13 @@ Five metrics, each measured from the logs version one collects.
 |---|---|---|---|---|
 | Answer quality | Self-serve answer rate paired with wrong-answer-report rate | answerFound true over all QuestionLog, alongside WrongAnswerReport count over answered questions | Desk-tally baseline from 3.1; 0 in-app | 70 percent answered AND under 5 percent of answers reported wrong, by week six |
 | Private-record answers | Attendance and balance questions answered in-app per week, with their wrong-answer rate | QuestionLog with attendance or balance intent and answerFound true, plus reports | 0 | 200 per week at under 5 percent reported wrong |
-| Check-in adoption | Members with at least one app check-in in the last seven days over active members | Distinct memberId in Attendance source CODE in seven days | 0 | 60 percent by week six |
-| Payment success rate | SUCCESS over SUCCESS plus FAILED, excluding ABANDONED | PaymentAttempt statuses | Not tracked today | 90 percent |
-| Stop-building signal | Answer quality and the answer-active share after six weeks | The logs above | Not applicable | Stop if self-serve answer rate is under 30 percent, OR answer-active members are under 15 percent of members |
+| Check-in adoption | PAID members with at least one app check-in in the last seven days over PAID members. FREE members cannot check in | Distinct memberId in Attendance source CODE in seven days, over members whose paid-until is today or later | 0 | 60 percent by week six |
+| Payment success rate | SUCCESS over SUCCESS plus FAILED, excluding ABANDONED and NEEDS_REVIEW. NEEDS_REVIEW attempts are counted and reported separately for the owner | PaymentAttempt statuses | Not tracked today | 90 percent |
+| Stop-building signal | Answer quality and the answer-active share after six weeks | The logs above | Not applicable | Stop if self-serve answer rate is under 30 percent, OR answer-active members are under 15 percent of verified members (FREE and PAID) |
 
 Definitions that matter:
 - "Active" for the stop-building signal means a member who asked a question or made a payment in the week. A check-in tap alone does not count as active, so a healthy turnstile cannot hide a dead answer product.
+- "Member" in every metric means a person with a verified account and a member record, whether FREE or PAID. Metrics that depend on the plan say so. A person who has not verified their email is not a member and is not counted.
 - "Answered" is not the same as "correct." That is why answer quality pairs the answered rate with the wrong-answer-report rate. A confidently wrong answer from a stale card lowers quality, it does not raise it.
 
 ## 13. Risks
@@ -667,9 +668,8 @@ Six risks, ordered by severity, worst first.
 | 5 | The owner matches an existing member to the wrong account | One member's balance, plan or attendance shown to another person, now that the desk no longer links accounts | Wrong-answer or complaint reports from a newly set-up member | The owner's screen shows name, email, phone and possible duplicates, and requires an in-person identity confirmation before an opening balance is saved; one account per member; every entry audited with its author (FR-8) |
 | 6 | Wrong starting data, including a wrong No | A mistyped opening balance or paid-until, or an existing member who answers No and sees nothing outstanding, gives confident wrong answers from day one | Wrong-answer reports clustered on newly signed-up members | A Yes answer shows no balance until the owner enters it; the owner sees every member's answer and can change it and add charges at any time, audited; no balance shown until set; paid-until and answer changes audited |
 | 7 | The webhook writes money and paid time | A forged, replayed, mismatched or half-written webhook could give free months or double an extension | Attempts in NEEDS_REVIEW; paid-until changes with no matching payment | Signature checked first; idempotent on the attempt; amount must match; one transaction with the member row locked; one audit row per attempt; the arithmetic exists once (FR-9, section 6.5) |
-| 8 | Signing up over an unverified account | Someone who knows an email can replace an unverified sign-up, then the inbox owner may click a link that activates an account with a password they did not choose | Reports of an account the person did not set up | The window is only while the account is unverified; an active account is never replaced; limit of 3 emails an hour; recorded as a known risk (D40) |
-| 9 | Verification emails used up | Free email plan allows 100 a day, so one person could block real sign-ups | Verification emails not arriving | Limit of 3 verification emails per address per hour, counted whether or not an account exists |
-| 10 | Starting a payment to get paid cards | A free member could start payments to get the 24-hour hold | PAID cards served to members with no paid time | The hold applies only to members who have had paid time before |
+| 8 | Verification emails used up | Free email plan allows 100 a day, so one person could block real sign-ups | Verification emails not arriving | Limit of 3 verification emails per address per hour, counted whether or not an account exists |
+| 9 | Starting a payment to get paid cards | A free member could start payments to get the 24-hour hold | PAID cards served to members with no paid time | The hold applies only to members who have had paid time before |
 
 ## 14. Open Questions
 
@@ -683,12 +683,12 @@ Each question needs information only the founder has. Each lists why it blocks w
 6. **What time zone and currency rounding apply?** Blocks month boundaries and figure display. Assumed: Africa/Lagos time and whole naira with no kobo. Attendance uniqueness is per calendar day in Africa/Lagos.
 7. **How long are question logs and private records kept?** Blocks a retention rule before real member data goes in. Assumed: kept through version one for the version-two build, with a retention decision before wider rollout.
 8. **What can an unverified account see?** Decided: nothing but the verify screen, a resend button and sign out.
-9. **How do staff and the owner sign in?** Blocks the admin side. Not assumed; the schema leaves staff sign-in fields out until this is decided.
+9. **How do staff and the owner sign in?** Resolved by D25: email and password, the owner creates staff accounts, and they use the same hashing and reset link as members.
 10. **Which domain sends the account emails?** Blocks launch, because Resend's free plan needs one verified domain.
 11. **Are the link lifetimes right?** Assumed: 24 hours for email verification, one hour for password reset.
 12. **What is the monthly price?** Open (D27). Blocks Pay. The owner sets it in the app. No default is assumed.
-13. **What does a webhook amount mismatch write to the ledger?** Open part of D33. Decided so far: no paid time is extended and the attempt is flagged for the owner. Not decided: whether the payment itself is recorded.
-14. **Is the unverified account cleanup 2 months or 7 days?** The approval said both; the later line, 2 months, was applied (D37). Confirm.
+13. **What does a webhook amount mismatch write to the ledger?** Resolved by D33: the payment, for the amount received, with no charge and no paid time. The attempt is marked NEEDS_REVIEW for the owner.
+14. **Is the unverified account cleanup 2 months or 7 days?** Resolved: 2 months (D37, confirmed).
 
 ## All assumptions in this document
 
@@ -708,7 +708,7 @@ Each question needs information only the founder has. Each lists why it blocks w
 14. Check-in adoption is unproven and is the product's main behavioural bet, not a stated fact.
 15. A membership payment extends paid time by one calendar month on a verified webhook or the owner's own entry, never otherwise. The plan is worked out from the paid-until date, not stored.
 16. The Neon free database sleeps when idle, so the first request after a quiet spell has a cold-start delay.
-17. An unverified account sees only the verify screen. A verified account has a member.
+17. An unverified account has no password and cannot sign in. A verified account has a member. A password is set only by using a verification or reset link.
 18. Email verification links last 24 hours and reset links last one hour.
 19. Five wrong passwords in ten minutes pause that email for ten minutes.
 20. Verification and reset emails are each limited to 3 per address per hour, to stay under Resend's free daily limit.
