@@ -31,8 +31,9 @@ Check: this route imports no member-scoped helper, and the member app cannot rea
 
 Three writes are never split:
 
-- A change to a member's tier or expiry writes the audit row in the same transaction.
-- Entering a member's opening balance sets the opening balance flag in the same transaction as the opening charge.
+- A change to a member's paid-until date, existing-member answer or access card writes the audit row in the same transaction.
+- Entering an existing member's opening balance sets the opening balance flag in the same transaction as the opening charge, and needs the owner's identity confirmation first.
+- A cash or transfer payment for membership writes the charge, the payment, the one-month extension and the audit row in one transaction, with the member row locked. A payment for a balance writes the payment only.
 - Approving a card writes its embedding in the same transaction.
 
 Check: each of these appears inside one transaction block. If the second half fails, the first half does not persist.
