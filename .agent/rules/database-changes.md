@@ -83,3 +83,9 @@ Reason: raw SQL is invisible to the Prisma schema, so the reason has to live in 
 Once a migration is applied, it is history. A mistake is fixed by a new migration, never by editing the old one.
 
 Reason: editing an applied migration puts environments out of step with each other and with the migration record.
+
+## One-time exception, 2026-10-06
+
+The human gave the agent permission to run `prisma migrate deploy` against the dev branch and the test branch, once, for the member plan migrations (A and B). That permission was scoped to that task and is spent. It was not a change to this file's rules.
+
+The rule is unchanged: the agent does not run migrations unless the human gives permission for a specific task. Permission for one task does not carry over to the next. Production was never touched, and the agent never connects to it.
