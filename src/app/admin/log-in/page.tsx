@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import {
   AuthCard,
@@ -18,6 +19,8 @@ const NOTICES: Record<string, AuthNotice> = {
   },
   reset: { tone: 'info', text: 'Your password is set. Sign in.' },
 };
+
+export const metadata: Metadata = { title: 'Log in' };
 
 export default async function AdminLogInPage({
   searchParams,

@@ -11,8 +11,8 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Spotter',
-  description: "Ask your gym. Answers come from the gym's own records.",
+  title: { default: 'Spotter', template: '%s | Spotter' },
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({

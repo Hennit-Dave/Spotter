@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import {
   AuthCard,
@@ -11,6 +12,15 @@ import {
 import { RadioField } from '@/components/account/RadioField';
 import { getSignedInMember } from '@/server/auth/member-session';
 import { resendLink, signUp } from './actions';
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ sent?: string }>;
+}): Promise<Metadata> {
+  const { sent } = await searchParams;
+  return { title: sent ? 'Check your email' : 'Create account' };
+}
 
 const NOTICES: Record<string, AuthNotice> = {
   name: { tone: 'error', text: 'Enter your name.' },

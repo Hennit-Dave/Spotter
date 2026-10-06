@@ -14,8 +14,9 @@ import { resetPassword } from './actions';
 
 // The link carries the token in the address, so it must not be passed on as a referrer.
 export const metadata: Metadata = {
+  title: 'Reset password',
   referrer: 'no-referrer',
-  robots: { index: false },
+  robots: { index: false, follow: false },
 };
 
 const NOTICES: Record<string, AuthNotice> = {

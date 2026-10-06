@@ -13,7 +13,7 @@ import { findUsableToken } from '@/server/auth/tokens';
 import { resetPassword } from './actions';
 
 // The link carries the token in the address, so it must not be passed on as a referrer.
-export const metadata: Metadata = { referrer: 'no-referrer' };
+export const metadata: Metadata = { title: 'Reset password', referrer: 'no-referrer' };
 
 const NOTICES: Record<string, AuthNotice> = {
   short: { tone: 'error', text: 'Use at least 8 characters.' },

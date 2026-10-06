@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 export const metadata: Metadata = {
-  title: 'Spotter desk',
+  title: { default: 'Spotter desk', template: '%s | Spotter desk' },
   robots: { index: false, follow: false },
 };
 

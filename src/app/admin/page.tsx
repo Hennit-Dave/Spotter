@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { AuthCard, Form, NavLink, SubmitButton, Text } from '@/components/admin/AuthCard';
 import { requireAdmin } from '@/server/auth/admin-session';
 import { signOut } from './actions';
+
+export const metadata: Metadata = { title: { absolute: 'Desk | Spotter' } };
 
 export default async function AdminHomePage() {
   const staff = await requireAdmin();

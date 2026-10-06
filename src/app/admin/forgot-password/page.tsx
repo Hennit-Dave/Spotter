@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import {
   AuthCard,
   Form,
@@ -7,6 +8,8 @@ import {
   TextField,
 } from '@/components/admin/AuthCard';
 import { requestPasswordReset } from './actions';
+
+export const metadata: Metadata = { title: 'Forgot password' };
 
 export default async function AdminForgotPasswordPage({
   searchParams,
