@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { LogoMark } from './LogoMark';
 import type { LegalDocument } from './legal-content';
-import styles from './LegalPage.module.css';
+import styles from './LegalView.module.css';
 
-export function LegalPage({ document }: { document: LegalDocument }) {
+export function LegalView({ document }: { document: LegalDocument }) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -30,8 +30,8 @@ export function LegalPage({ document }: { document: LegalDocument }) {
       </main>
       <footer>
         <nav className={styles.legalLinks} aria-label="Legal">
-          <Link href="/privacy-policy" prefetch={false}>Privacy Policy</Link>
-          <Link href="/terms-of-service" prefetch={false}>Terms of Service</Link>
+          <Link href="/?view=privacy" prefetch={false}>Privacy Policy</Link>
+          <Link href="/?view=terms" prefetch={false}>Terms of Service</Link>
         </nav>
       </footer>
     </div>

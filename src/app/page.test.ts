@@ -3,16 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/server/auth/member-session', () => ({ getSignedInMember: vi.fn() }));
 vi.mock('@/components/home/HomeShell', () => ({ HomeShell: () => null }));
 vi.mock('@/components/home/Landing', () => ({ Landing: () => null }));
+vi.mock('@/components/home/LegalView', () => ({ LegalView: () => null }));
 
 import { getSignedInMember } from '@/server/auth/member-session';
-import { generateMetadata } from './page';
+import HomePage, { generateMetadata } from './page';
+import { LegalView } from '@/components/home/LegalView';
+
+const homeProps = () => ({ searchParams: Promise.resolve({}) });
 
 describe('homepage metadata visibility', () => {
   beforeEach(() => vi.resetAllMocks());
 
   it('publishes the approved marketing metadata for signed-out visitors', async () => {
     vi.mocked(getSignedInMember).mockResolvedValue(null);
-    const metadata = await generateMetadata();
+    const metadata = await generateMetadata(homeProps());
     expect(metadata.title).toEqual({ absolute: 'Spotter | Your gym’s answer desk' });
     expect(metadata.description).toBe('Your gym’s answer desk.');
     expect(metadata.description?.split(/\s+/)).toHaveLength(4);
@@ -26,7 +30,7 @@ describe('homepage metadata visibility', () => {
       accountId: 'test-account', memberId: 'test-member', name: 'Private name',
       email: 'private@example.test',
     });
-    expect(await generateMetadata()).toEqual({
+    expect(await generateMetadata(homeProps())).toEqual({
       title: { absolute: 'Home | Spotter' },
       robots: { index: false, follow: false },
     });
@@ -34,6 +38,21 @@ describe('homepage metadata visibility', () => {
 
   it('does not fall back to indexable metadata when the session check fails', async () => {
     vi.mocked(getSignedInMember).mockRejectedValue(new Error('Session unavailable'));
-    await expect(generateMetadata()).rejects.toThrow('Session unavailable');
+    await expect(generateMetadata(homeProps())).rejects.toThrow('Session unavailable');
+  });
+
+  it.each([
+    ['privacy', 'Privacy Policy'],
+    ['terms', 'Terms of Service'],
+  ])('renders the public %s view without reading a member session or including marketing metadata', async (view, title) => {
+    const props = { searchParams: Promise.resolve({ view }) };
+    expect(await generateMetadata(props)).toEqual({
+      title: { absolute: `${title} | Spotter` },
+      robots: { index: false, follow: false },
+    });
+    const rendered = await HomePage(props);
+    expect(rendered.type).toBe(LegalView);
+    expect(rendered.props.document.title).toBe(title);
+    expect(getSignedInMember).not.toHaveBeenCalled();
   });
 });
