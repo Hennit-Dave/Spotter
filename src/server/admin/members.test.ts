@@ -7,15 +7,17 @@ const good = { name: 'Chidinma Okafor', tier: 'BASIC', expiry: '2026-12-31', pho
 describe('validateNewMember', () => {
   it('accepts a complete entry and tidies the name', () => {
     const result = validateNewMember({ ...good, name: '  Chidinma   Okafor ' }, TODAY);
-    expect(result).toMatchObject({ ok: true, value: { name: 'Chidinma Okafor', tier: 'BASIC', phone: null } });
+    expect(result).toMatchObject({ ok: true, expired: false, value: { name: 'Chidinma Okafor', tier: 'BASIC', phone: null } });
     if (result.ok) expect(result.value.expiryDate.toISOString()).toBe('2026-12-31T00:00:00.000Z');
   });
 
-  it('keeps an optional phone number', () => {
-    expect(validateNewMember({ ...good, phone: ' +234 803 123 4567 ' }, TODAY)).toMatchObject({
-      ok: true,
-      value: { phone: '+234 803 123 4567' },
-    });
+  it('stores an optional phone number as international digits only', () => {
+    for (const phone of [' +234 803 123 4567 ', '0803 123 4567', '2348031234567']) {
+      expect(validateNewMember({ ...good, phone }, TODAY)).toMatchObject({
+        ok: true,
+        value: { phone: '2348031234567' },
+      });
+    }
   });
 
   it('refuses a missing or oversized name', () => {
@@ -36,13 +38,18 @@ describe('validateNewMember', () => {
     }
   });
 
-  it('refuses an expiry before today but accepts today', () => {
-    expect(validateNewMember({ ...good, expiry: '2026-10-05' }, TODAY)).toEqual({ ok: false, error: 'expiry_past' });
-    expect(validateNewMember({ ...good, expiry: TODAY }, TODAY).ok).toBe(true);
+  it('allows an expiry before today but marks it expired, so the screen can ask first', () => {
+    expect(validateNewMember({ ...good, expiry: '2026-10-05' }, TODAY)).toMatchObject({ ok: true, expired: true });
+    expect(validateNewMember({ ...good, expiry: '2020-01-01' }, TODAY)).toMatchObject({ ok: true, expired: true });
+  });
+
+  it('does not mark today, or later, as expired', () => {
+    expect(validateNewMember({ ...good, expiry: TODAY }, TODAY)).toMatchObject({ ok: true, expired: false });
+    expect(validateNewMember({ ...good, expiry: '2027-01-01' }, TODAY)).toMatchObject({ ok: true, expired: false });
   });
 
   it('refuses a phone number that is not a phone number', () => {
-    for (const phone of ['abc', '12', '08031234567890123456789', 'call me']) {
+    for (const phone of ['abc', '12', '08031234567890123456789', 'call me', '0803123456']) {
       expect(validateNewMember({ ...good, phone }, TODAY)).toEqual({ ok: false, error: 'phone' });
     }
   });

@@ -2,29 +2,31 @@ import type { PrismaClient } from '../../../generated/prisma/client';
 import type { Tier } from '../../../generated/prisma/enums';
 import { generateMembershipId } from '../auth/membership-id';
 import { calendarDateText, parseCalendarDate } from '../time';
+import { normalisePhone } from './phone';
 
 // Admin code. It reads and writes across members, so it runs only after the role check in the
 // route or action that calls it. It never uses a member-scoped helper (privacy.md).
 
 export const MAX_NAME_LENGTH = 100;
-const PHONE_PATTERN = /^[0-9+()\-\s]{6,20}$/;
 const MAX_ID_ATTEMPTS = 10;
 
-export type MemberFormError = 'name' | 'tier' | 'expiry' | 'expiry_past' | 'phone';
+export type MemberFormError = 'name' | 'tier' | 'expiry' | 'phone';
 
 export interface NewMemberInput {
   name: string;
   tier: Tier;
   expiryDate: Date;
+  // International digits only, for example 2348074652543, or null when left blank.
   phone: string | null;
 }
 
 export type MemberValidation =
-  | { ok: true; value: NewMemberInput }
+  | { ok: true; value: NewMemberInput; expired: boolean }
   | { ok: false; error: MemberFormError };
 
 // Checks every field before anything is written. `today` is the Africa/Lagos calendar date as
-// YYYY-MM-DD. An expiry before today is refused, which catches a mistyped year.
+// YYYY-MM-DD. An expiry before today is allowed, because lapsed members must be enterable, but
+// the result says so, and the screen asks for a confirmation before it saves.
 export function validateNewMember(
   raw: { name: string; tier: string; expiry: string; phone: string },
   today: string,
@@ -36,14 +38,18 @@ export function validateNewMember(
 
   const expiryDate = parseCalendarDate(raw.expiry.trim());
   if (!expiryDate) return { ok: false, error: 'expiry' };
-  if (calendarDateText(expiryDate) < today) return { ok: false, error: 'expiry_past' };
 
   const phoneText = raw.phone.trim();
-  if (phoneText !== '' && !PHONE_PATTERN.test(phoneText)) return { ok: false, error: 'phone' };
+  let phone: string | null = null;
+  if (phoneText !== '') {
+    phone = normalisePhone(phoneText);
+    if (phone === null) return { ok: false, error: 'phone' };
+  }
 
   return {
     ok: true,
-    value: { name, tier: raw.tier, expiryDate, phone: phoneText === '' ? null : phoneText },
+    value: { name, tier: raw.tier, expiryDate, phone },
+    expired: calendarDateText(expiryDate) < today,
   };
 }
 
@@ -149,4 +155,62 @@ export function findMemberByMembershipId(
     where: { membershipId },
     select: { name: true, membershipId: true },
   });
+}
+
+export interface DuplicateMember {
+  id: string;
+  membershipId: string;
+  name: string;
+  phone: string | null;
+  tier: Tier;
+  expiryDate: Date;
+  nameMatch: boolean;
+  phoneMatch: boolean;
+  // The account linked to this member, if any, with its email.
+  account: { email: string; status: string } | null;
+}
+
+const DUPLICATE_LIMIT = 10;
+
+// Finds existing members with the same name (ignoring case, with extra spaces already
+// collapsed) or the same normalised phone number. Phone matches come first, because they are
+// the stronger sign it is the same person. This only warns. It never blocks.
+export async function findDuplicateMembers(
+  db: PrismaClient,
+  candidate: { name: string; phone: string | null },
+): Promise<DuplicateMember[]> {
+  const rows = await db.member.findMany({
+    where: {
+      OR: [
+        { name: { equals: candidate.name, mode: 'insensitive' } },
+        ...(candidate.phone ? [{ phone: candidate.phone }] : []),
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+    take: DUPLICATE_LIMIT,
+    select: {
+      id: true,
+      membershipId: true,
+      name: true,
+      phone: true,
+      tier: true,
+      expiryDate: true,
+      account: { select: { email: true, status: true } },
+    },
+  });
+  const wanted = candidate.name.toLowerCase();
+  return rows
+    .map((row) => ({
+      ...row,
+      nameMatch: row.name.trim().replace(/\s+/g, ' ').toLowerCase() === wanted,
+      phoneMatch: candidate.phone !== null && row.phone === candidate.phone,
+    }))
+    .sort((a, b) => Number(b.phoneMatch) - Number(a.phoneMatch));
+}
+
+export function findMemberSummaryById(
+  db: PrismaClient,
+  id: string,
+): Promise<{ name: string; membershipId: string } | null> {
+  return db.member.findUnique({ where: { id }, select: { name: true, membershipId: true } });
 }
