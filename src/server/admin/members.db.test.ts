@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { getTestDb } from '../test-db';
+import { randomUUID } from 'node:crypto';
 import { createMember, findDuplicateMembers } from './members';
 
 // Runs against the Neon test branch only. getTestDb refuses the main branch.
@@ -128,5 +129,47 @@ describe('findDuplicateMembers', () => {
   it('returns nothing for a new name and a new phone, and ignores a null phone', async () => {
     expect(await findDuplicateMembers(db, { name: `${run} nobody by this name`, phone: '2348999999999' })).toEqual([]);
     expect(await findDuplicateMembers(db, { name: `${run} nobody by this name`, phone: null })).toEqual([]);
+  });
+});
+
+describe('createMember with a creation key', () => {
+  it('creates nothing the second time the same key arrives, and returns the first member', async () => {
+    const key = randomUUID();
+    const first = await createMember(db, input('keyed'), author.id, undefined, key);
+    const second = await createMember(db, input('keyed again'), author.id, undefined, key);
+    expect(first.existing).toBe(false);
+    expect(second).toMatchObject({ id: first.id, membershipId: first.membershipId, existing: true });
+    expect(await db.member.count({ where: { name: { startsWith: `${run} keyed` } } })).toBe(1);
+  });
+
+  it('lets exactly one of two simultaneous submits with the same key create a member', async () => {
+    const key = randomUUID();
+    const [a, b] = await Promise.all([
+      createMember(db, input('race'), author.id, undefined, key),
+      createMember(db, input('race'), author.id, undefined, key),
+    ]);
+    expect(a.membershipId).toBe(b.membershipId);
+    expect([a.existing, b.existing].sort()).toEqual([false, true]);
+    expect(await db.member.count({ where: { creationKey: key } })).toBe(1);
+    const stored = await db.member.findUniqueOrThrow({ where: { creationKey: key }, include: { changes: true } });
+    expect(stored.changes).toHaveLength(2);
+  });
+
+  it('still retries a taken membership ID when a key is present', async () => {
+    const taken = await createMember(db, input('key-taken'), author.id);
+    const ids = [taken.membershipId, 'SPT-KKKK'];
+    const created = await createMember(db, input('key-retry'), author.id, () => ids.shift()!, randomUUID());
+    expect(created).toMatchObject({ membershipId: 'SPT-KKKK', existing: false });
+  });
+
+  it('gives different keys different members', async () => {
+    const a = await createMember(db, input('two-keys'), author.id, undefined, randomUUID());
+    const b = await createMember(db, input('two-keys'), author.id, undefined, randomUUID());
+    expect(a.id).not.toBe(b.id);
+  });
+
+  it('works without a key, as before', async () => {
+    const a = await createMember(db, input('no-key'), author.id);
+    expect(a.existing).toBe(false);
   });
 });

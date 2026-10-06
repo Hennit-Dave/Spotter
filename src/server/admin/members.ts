@@ -64,6 +64,21 @@ function isUniqueViolation(error: unknown): boolean {
 export interface CreatedMember {
   id: string;
   membershipId: string;
+  // True when a member with this creation key already existed, so nothing new was saved.
+  existing: boolean;
+}
+
+// The key the add member form carries. A random UUID made on the server.
+export const CREATION_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+export function findMemberByCreationKey(
+  db: PrismaClient,
+  creationKey: string,
+): Promise<{ id: string; name: string; membershipId: string } | null> {
+  return db.member.findUnique({
+    where: { creationKey },
+    select: { id: true, name: true, membershipId: true },
+  });
 }
 
 // Creates a member with a system-generated membership ID. The member row and the audit rows
@@ -73,19 +88,29 @@ export interface CreatedMember {
 // If the generated ID is already taken, the database refuses the insert, the transaction rolls
 // back, and a new ID is generated in a fresh transaction. A taken ID is never saved twice.
 // Nothing here changes an existing member's ID, so an ID is permanent.
+//
+// The creation key makes a repeated submit safe. If a member with this key already exists, or
+// another request with the same key wins the race, nothing new is saved and the existing member
+// is returned. The unique index on the key is what decides the race, not a check beforehand.
 export async function createMember(
   db: PrismaClient,
   input: NewMemberInput,
   authorId: string,
   generateId: () => string = generateMembershipId,
+  creationKey: string | null = null,
 ): Promise<CreatedMember> {
+  if (creationKey !== null) {
+    const existing = await findMemberByCreationKey(db, creationKey);
+    if (existing) return { id: existing.id, membershipId: existing.membershipId, existing: true };
+  }
   for (let attempt = 1; attempt <= MAX_ID_ATTEMPTS; attempt++) {
     const membershipId = generateId();
     try {
-      return await db.$transaction(async (tx) => {
+      const created = await db.$transaction(async (tx) => {
         const member = await tx.member.create({
           data: {
             membershipId,
+            creationKey,
             name: input.name,
             phone: input.phone,
             tier: input.tier,
@@ -113,8 +138,16 @@ export async function createMember(
         });
         return member;
       });
+      return { ...created, existing: false };
     } catch (error) {
-      if (isUniqueViolation(error)) continue;
+      if (isUniqueViolation(error)) {
+        // Either the generated ID was taken, or another request with this key just saved.
+        if (creationKey !== null) {
+          const winner = await findMemberByCreationKey(db, creationKey);
+          if (winner) return { id: winner.id, membershipId: winner.membershipId, existing: true };
+        }
+        continue;
+      }
       throw error;
     }
   }
