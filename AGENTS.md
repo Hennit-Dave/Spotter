@@ -50,6 +50,7 @@ The PRD defines no folder layout. The human approved one on 2026-10-05; it is in
 - Make one change at a time. Do not batch unrelated changes.
 - Ask before adding any package or dependency.
 - Do not run any command that creates, alters, drops, seeds, or migrates database tables or data. Propose the schema change and the migration; the human runs it.
+- Databases, decided 2026-10-06: local development uses the Neon branch named dev, through DATABASE_URL and DIRECT_URL. A schema change goes to dev first, then test, then production, each applied by the human. The agent never runs a migration on any of them.
 - One exception, approved by the human on 2026-10-05: database-backed tests may write to the Neon branch named test, and only through the connection string in TEST_DATABASE_URL. Never write to the main branch, and never use DATABASE_URL or DIRECT_URL in a test. The exception covers rows in a branch the human created for this. It does not cover schema changes or migrations, even on the test branch.
 - Run the pre-router first, strip names before any model call, and use only the no-training Gemini configuration.
 - Tier and expiry changes are audited in the same transaction; card approval and its embedding are one atomic step; exactly one on-duty row may be active.
