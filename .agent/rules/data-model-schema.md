@@ -118,16 +118,16 @@ enum AttemptKind {
 
 // PRIVATE MODEL. A sign-in identity, not a member. Never embedded.
 // memberId is set by the system, in the same transaction that makes the account ACTIVE when
-// the email is verified. An UNVERIFIED account has no member.
+// the email is verified. An UNVERIFIED account has no member and no password.
 model Account {
   id                   String        @id @default(cuid())
   name                 String
   email                String        @unique // stored lowercase and trimmed
-  passwordHash         String
+  passwordHash         String?       // empty until the person uses their verification link and sets one
   sessionVersion       Int           @default(0) // add one to end every other session
   status               AccountStatus @default(UNVERIFIED)
   emailVerifiedAt      DateTime?
-  phone                String        // required at sign-up; international digits only; copied to Member at verification
+  phone                String        // required at sign-up; international digits only; copied to Member at verification. The person can correct it on the verification page
   claimsExistingMember Boolean       // the answer to "Already a member at the gym?"
   memberId             String?       @unique
   createdAt            DateTime      @default(now())
