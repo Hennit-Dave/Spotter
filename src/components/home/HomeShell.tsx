@@ -1,4 +1,5 @@
 import { logOut } from '@/app/actions';
+import { LogoMark } from './LogoMark';
 import { COMMON_QUESTIONS } from './questions';
 import styles from './HomeShell.module.css';
 
@@ -6,7 +7,7 @@ export function HomeShell() {
   return (
     <main className={styles.shell}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Spotter</h1>
+        <h1 className={styles.title}><LogoMark />Spotter</h1>
         <form action={logOut}>
           <button type="submit" className={styles.logOut}>
             Log out

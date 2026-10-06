@@ -39,6 +39,9 @@
 }
 
 .title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   font-family: var(--type-headline-medium-dmsans-font-family);
   font-size: var(--type-headline-medium-dmsans-font-size);
   font-weight: var(--type-headline-medium-dmsans-font-weight);

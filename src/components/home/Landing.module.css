@@ -28,19 +28,6 @@
   text-decoration: none;
 }
 
-.brandMark {
-  display: grid;
-  place-items: center;
-  width: var(--size-tap);
-  height: var(--size-tap);
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-size: var(--type-headline-large-dmsans-font-size);
-  letter-spacing: 0;
-  line-height: 1;
-}
-
 .navLink {
   display: inline-flex;
   align-items: center;
