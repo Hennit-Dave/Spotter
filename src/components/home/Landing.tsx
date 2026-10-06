@@ -11,7 +11,7 @@ export function Landing() {
           Spotter
         </Link>
         <Link href="/log-in" prefetch={false} className={styles.navLink}>
-          Log in <span aria-hidden="true">↗</span>
+          Log in
         </Link>
       </header>
       <main className={styles.main}>
@@ -26,7 +26,7 @@ export function Landing() {
           </p>
           <div className={styles.actions}>
             <Link href="/sign-up" prefetch={false} className={styles.primary}>
-              Create account <span aria-hidden="true">↗</span>
+              Create account
             </Link>
             <Link href="/log-in" prefetch={false} className={styles.secondary}>Log in</Link>
           </div>
