@@ -24,7 +24,7 @@ Reason: an install from a store costs data and a decision the member may not mak
 
 A person who is not signed in lands on a landing page: one or two lines saying what Spotter is, a Create account button, and a Log in button.
 
-The other account screens are sign up (name, email, password, phone, and the question "Already a member at the gym?"), verify your email, log in, and forgot password. An account that has not verified its email sees one message asking it to verify, with a resend button. Each is one short form or one message. No images beyond the logo, no carousel, no marketing copy.
+The other account screens are sign up (name, email, phone, and the question "Already a member at the gym?"), a check your email message with a resend form, the page the emailed link opens (check your details and set a password), log in, and forgot password. An account that has not verified its email has no password and cannot sign in. Each is one short form or one message. No images beyond the logo, no carousel, no marketing copy.
 
 Reason: these screens are crossed once or rarely, on a small data bundle. They should cost almost nothing to load.
 
