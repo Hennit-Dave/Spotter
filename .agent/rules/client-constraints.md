@@ -22,15 +22,15 @@ Reason: an install from a store costs data and a decision the member may not mak
 
 ## Account screens are light
 
-A person who is not signed in lands on a landing page: one or two lines saying what Spotter is, a Create account button, a Log in button, and a line saying the membership ID comes from the front desk.
+A person who is not signed in lands on a landing page: one or two lines saying what Spotter is, a Create account button, and a Log in button.
 
-The other account screens are sign up, verify your email, log in, forgot password, and the waiting screen for an account that is not yet linked. Each is one short form or one message. No images beyond the logo, no carousel, no marketing copy.
+The other account screens are sign up (name, email, password, phone, and the question "Already a member at the gym?"), verify your email, log in, and forgot password. An account that has not verified its email sees one message asking it to verify, with a resend button. Each is one short form or one message. No images beyond the logo, no carousel, no marketing copy.
 
 Reason: these screens are crossed once or rarely, on a small data bundle. They should cost almost nothing to load.
 
 ## The member home is not an empty chat box
 
-For a linked member, the first screen shows a status strip with the member's tier, expiry, days trained this month, and balance. Below it sit four tappable common questions. A text box is present but optional.
+For a signed-in member, the first screen shows a status strip with the member's plan (Free or Paid), the paid-until date, days trained this month, and balance. A FREE member has no paid-until date to show, so the strip says the plan is Free and shows no date, never a blank or a zero. Below it sit four tappable common questions. A text box is present but optional.
 
 **The four questions are supplied by the human. Do not invent them.** Ask for them before building the screen, and put them in one place so they can be changed without touching the layout.
 
@@ -68,10 +68,12 @@ Reason: a blank screen on a slow first load reads as a broken app, and the membe
 
 ## Empty states are written, not blank
 
-Every screen has a written empty state. Two are not free choices, because the rule behind each lives in data-model.md:
+Every screen has a written empty state. The first two are not free choices, because the rule behind each lives in data-model.md:
 
 - Before a member's first check-in, the training days line explains that check-in has just started and days will show from their first check-in. Never render a zero.
 - While a member's opening balance is not set, the balance path hands off to the desk. Never render a zero, and never render a currency symbol with no figure.
+- A FREE member who opens Check in sees a written sentence saying check-in is for paid members. Never a blank screen and never a disabled control with no explanation.
+- While no monthly price is set, the Pay screen says payments are not open yet. Never a price of zero or a currency symbol with no figure.
 
 Reason: these two are where a rendering shortcut becomes a false claim to the member. The rule is set elsewhere; this file only fixes how it appears on screen.
 
