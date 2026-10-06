@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Runs against the Neon test branch only. The action calls getDb(), so getDb is replaced with
@@ -30,7 +31,7 @@ import { getDb } from '@/server/db';
 import { getSessionSecret, signSession } from '@/server/auth/cookie';
 import { startAdminSession } from '@/server/auth/admin-session';
 import { addMember } from './actions';
-import { INITIAL_STATE, type AddMemberState } from './form-state';
+import { initialState, type AddMemberState } from './form-state';
 
 const db = getDb();
 const run = `t${Date.now().toString(36)}`;
@@ -45,8 +46,9 @@ const farFuture = '2099-12-31';
 const lapsed = '2020-01-31';
 const good = (label: string) => ({ name: `${run} ${label}`, tier: 'BASIC', expiry: farFuture, phone: '' });
 
+// Each call is a new submit with its own creation key, unless the test gives one.
 const submit = (fields: Record<string, string>): Promise<AddMemberState> =>
-  addMember(INITIAL_STATE, form(fields));
+  addMember(initialState('unused'), form({ creationKey: randomUUID(), ...fields }));
 
 async function memberCount() {
   return db.member.count({ where: { name: { startsWith: run } } });
@@ -244,5 +246,79 @@ describe('possible duplicates warn, and never block', () => {
     expect(second).toMatchObject({ step: 'duplicates', confirmedExpired: true });
     done(await submit({ ...good('Both Warnings'), expiry: lapsed, confirmExpired: '1', confirmNew: '1' }));
     expect(await db.member.count({ where: { name: `${run} Both Warnings` } })).toBe(2);
+  });
+});
+
+describe('the creation key (idempotency)', () => {
+  it('creates nothing when the same key is sent again, and shows the member it made', async () => {
+    await startAdminSession(staff);
+    const creationKey = randomUUID();
+    const first = done(await submit({ ...good('once'), creationKey }));
+    const second = done(await submit({ ...good('once'), creationKey }));
+    const member = await db.member.findFirstOrThrow({ where: { name: `${run} once` } });
+    expect(first).toContain('Added');
+    expect(second).toContain('Already added');
+    expect(second).toContain(member.membershipId);
+    expect(second).toContain('Nothing new was saved');
+    expect(await db.member.count({ where: { name: `${run} once` } })).toBe(1);
+    expect(await db.memberChange.count({ where: { memberId: member.id } })).toBe(2);
+  });
+
+  it('lets exactly one of two simultaneous submits create the member', async () => {
+    await startAdminSession(staff);
+    const creationKey = randomUUID();
+    const [a, b] = await Promise.all([
+      submit({ ...good('double tap'), creationKey, confirmNew: '1' }),
+      submit({ ...good('double tap'), creationKey, confirmNew: '1' }),
+    ]);
+    const member = await db.member.findFirstOrThrow({ where: { name: `${run} double tap` } });
+    expect(await db.member.count({ where: { name: `${run} double tap` } })).toBe(1);
+    expect(done(a)).toContain(member.membershipId);
+    expect(done(b)).toContain(member.membershipId);
+  });
+
+  it('refuses a missing or made-up key, saves nothing, and hands back a fresh valid key', async () => {
+    await startAdminSession(staff);
+    for (const bad of ['', 'not-a-key', '123e4567-e89b-12d3-a456-42661417400']) {
+      const state = await addMember(initialState('unused'), form({ ...good('stale'), creationKey: bad }));
+      expect(state.step).toBe('form');
+      if (state.step === 'form') {
+        expect(state.error).toContain('out of date');
+        expect(state.key).toMatch(/^[0-9a-f-]{36}$/);
+        expect(state.key).not.toBe(bad);
+      }
+    }
+    expect(await db.member.count({ where: { name: `${run} stale` } })).toBe(0);
+  });
+
+  it('keeps the same key through errors, warnings and "Go back"', async () => {
+    await startAdminSession(staff);
+    const creationKey = randomUUID();
+    const invalid = await submit({ ...good('keep'), name: '  ', creationKey });
+    expect(invalid.key).toBe(creationKey);
+    const asked = await submit({ ...good('keep'), expiry: lapsed, creationKey });
+    expect(asked).toMatchObject({ step: 'confirmExpired', key: creationKey });
+    const back = await submit({ ...good('keep'), expiry: lapsed, creationKey, back: '1' });
+    expect(back.key).toBe(creationKey);
+    expect(await db.member.count({ where: { name: `${run} keep` } })).toBe(0);
+  });
+
+  it('gives the form a fresh key after a save, so the next member is not blocked', async () => {
+    await startAdminSession(staff);
+    const creationKey = randomUUID();
+    const saved = await submit({ ...good('fresh one'), creationKey });
+    done(saved);
+    expect(saved.key).not.toBe(creationKey);
+    const next = await submit({ ...good('fresh two'), creationKey: saved.key });
+    expect(done(next)).toContain('Added');
+    expect(await db.member.count({ where: { name: { startsWith: `${run} fresh` } } })).toBe(2);
+  });
+
+  it('still lets a person create a second member with the same name, using a new key', async () => {
+    await startAdminSession(staff);
+    done(await submit({ ...good('same name') }));
+    expect((await submit({ ...good('same name') })).step).toBe('duplicates');
+    done(await submit({ ...good('same name'), confirmNew: '1' }));
+    expect(await db.member.count({ where: { name: `${run} same name` } })).toBe(2);
   });
 });

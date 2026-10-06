@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { addMember } from '@/app/admin/members/actions';
 import {
-  INITIAL_STATE,
+  initialState,
   type DuplicateView,
   type MemberFormValues,
 } from '@/app/admin/members/form-state';
@@ -18,9 +18,18 @@ const dateFormat = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric',
 });
 
-function HiddenValues({ values, confirmedExpired }: { values: MemberFormValues; confirmedExpired?: boolean }) {
+function HiddenValues({
+  values,
+  creationKey,
+  confirmedExpired,
+}: {
+  values: MemberFormValues;
+  creationKey: string;
+  confirmedExpired?: boolean;
+}) {
   return (
     <>
+      <input type="hidden" name="creationKey" value={creationKey} />
       <input type="hidden" name="name" value={values.name} />
       <input type="hidden" name="tier" value={values.tier} />
       <input type="hidden" name="expiry" value={values.expiry} />
@@ -53,13 +62,15 @@ function DuplicateCard({ match }: { match: DuplicateView }) {
   );
 }
 
-export function AddMemberForm() {
-  const [state, formAction] = useActionState(addMember, INITIAL_STATE);
+// `initialKey` is a random key made on the server for this page load. Every response gives
+// the form the key to send next.
+export function AddMemberForm({ initialKey }: { initialKey: string }) {
+  const [state, formAction] = useActionState(addMember, initialState(initialKey));
 
   if (state.step === 'confirmExpired') {
     return (
       <Form key={state.nonce} action={formAction}>
-        <HiddenValues values={state.values} />
+        <HiddenValues values={state.values} creationKey={state.key} />
         <Notice notice={{ tone: 'warning', text: 'This membership has already expired. Save anyway?' }} />
         <PendingButton name="confirmExpired" value="1">
           Save anyway
@@ -75,7 +86,11 @@ export function AddMemberForm() {
     const strong = state.matches.some((m) => m.phoneMatch);
     return (
       <Form key={state.nonce} action={formAction}>
-        <HiddenValues values={state.values} confirmedExpired={state.confirmedExpired} />
+        <HiddenValues
+          values={state.values}
+          creationKey={state.key}
+          confirmedExpired={state.confirmedExpired}
+        />
         <Notice
           notice={
             strong
@@ -108,6 +123,7 @@ export function AddMemberForm() {
     <Form key={state.nonce} action={formAction}>
       {state.done && <Notice notice={{ tone: 'info', text: state.done }} />}
       {state.error && <Notice notice={{ tone: 'error', text: state.error }} />}
+      <input type="hidden" name="creationKey" value={state.key} />
       <Text>The system makes the membership ID. You will see it after you save.</Text>
       <TextField
         name="name"
