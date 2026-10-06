@@ -38,7 +38,7 @@ Reason for each: the first protects other members. The second stops the app clai
 
 ## The medical boundary
 
-This is the one place where a card exists and the answer is still partly refused. Premium training-plan cards contain injury and body language by their nature, and the medical refusal would otherwise ban the feature the gym sells.
+This is the one place where a card exists and the answer is still partly refused. PAID training-plan cards contain injury and body language by their nature, and the medical refusal would otherwise ban the feature the gym sells.
 
 **Allowed.** Reading back what an approved training-plan card states, word for word, with the card shown underneath.
 
