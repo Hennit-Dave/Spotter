@@ -26,7 +26,7 @@ export function ContactUs({ supportEmail }: { supportEmail?: string }) {
         aria-haspopup="dialog"
         onClick={() => dialog.current?.showModal()}
       >
-        Contact us
+        Contact us <span aria-hidden="true">↗</span>
       </button>
       <dialog
         ref={dialog}
