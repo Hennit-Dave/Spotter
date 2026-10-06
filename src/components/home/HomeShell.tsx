@@ -10,10 +10,10 @@ export function HomeShell() {
 
       <section className={styles.statusStrip} aria-label="Membership status">
         <div className={styles.statusItem}>
-          <span className={styles.statusLabel}>Tier</span>
+          <span className={styles.statusLabel}>Plan</span>
         </div>
         <div className={styles.statusItem}>
-          <span className={styles.statusLabel}>Expires</span>
+          <span className={styles.statusLabel}>Paid until</span>
         </div>
         <div className={styles.statusItem}>
           <span className={styles.statusLabel}>Days trained</span>
