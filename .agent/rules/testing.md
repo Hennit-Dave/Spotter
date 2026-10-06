@@ -29,17 +29,20 @@ Proves: the isolation invariant holds in code, not just in review.
 **Unverified accounts reach nothing.** An UNVERIFIED account receives no card, no private record, no check-in and no payment.
 Proves: open sign-up cannot become a way in.
 
-**Sign-up makes no member.** Signing up creates an UNVERIFIED account and no Member row. Signing up again with an UNVERIFIED account's email replaces its name, phone, answer and password and sends a new link. Signing up with an ACTIVE account's email changes nothing and sends nothing.
-Proves: a member exists only after the inbox is verified, and a stranger cannot take over an active account by signing up.
+**Sign-up makes no member and sets no password.** Signing up creates an UNVERIFIED account with no password hash and no Member row. Signing up again with an UNVERIFIED account's email updates its name, phone and answer and sends a new link, and sets no password. Signing up with an ACTIVE account's email changes nothing and sends nothing.
+Proves: a member exists only after the inbox is verified, and a stranger cannot take over any account by signing up.
 
-**Verification is atomic.** Using a verification link makes the account ACTIVE, creates the member with its membership ID, and links them, all together or not at all. Using the link twice creates one member. A membership ID collision is retried and never saved twice.
-Proves: there is never an ACTIVE account with no member, or two members for one account.
+**A password is set only by a link.** An account's first password can be set only by using its verification link, and a password changes afterwards only through a reset link. A reset link does nothing for an UNVERIFIED account. No sign-up, sign-in or other request sets or replaces a password hash. A source check fails if any other code writes the password hash.
+Proves: nobody can set the password of an account whose inbox they do not control.
+
+**Verification is atomic.** Using a verification link sets the password, makes the account ACTIVE, creates the member with its membership ID using the details as corrected on the page, and links them, all together or not at all. A wrong password or invalid detail uses nothing up: the link still works. Using the link twice creates one member and cannot set the password again. A membership ID collision is retried and never saved twice. An UNVERIFIED account cannot sign in.
+Proves: there is never an ACTIVE account with no member or no password, or two members for one account.
 
 **ID lookup.** `spt7k4q`, `SPT 7K4Q` and `SPT-7K4Q` resolve to the same ID wherever staff search by membership ID.
 Proves: the desk is not turned away for typing an ID differently.
 
-**Email links.** A verification or reset link works once, and an expired link does nothing.
-Proves: an old or forwarded link cannot be reused.
+**Email links.** A verification or reset link works once, and an expired link does nothing. The verification page shows the sign-up details only for a valid, unused, unexpired link.
+Proves: an old or forwarded link cannot be reused, and the page leaks nothing without one.
 
 **No account enumeration.** Sign up, sign in and password reset give the same response whether or not the email exists, and whether that account is unverified or active.
 Proves: the app does not tell a stranger which accounts are real.
@@ -83,7 +86,7 @@ Proves: the unique constraint is on the Lagos calendar day, not a UTC timestamp.
 **Webhook idempotency.** Two identical webhooks for one reference write one ledger charge, one ledger payment, one paid-until change and one audit row.
 Proves: a resent webhook cannot double-credit or double-extend.
 
-**Webhook atomicity and amount.** If any write in a membership payment fails, none persists. A webhook whose amount differs from the attempt extends no paid time and marks the attempt NEEDS_REVIEW. Two different payments arriving at once both add their month.
+**Webhook atomicity and amount.** If any write in a membership payment fails, none persists. A webhook whose amount differs from the attempt writes the payment to the ledger with no charge and no paid time, and marks the attempt NEEDS_REVIEW. Two different payments arriving at once both add their month.
 Proves: money and paid time cannot disagree, and a lost update cannot cost a member a month.
 
 **System audit.** A change to paid-until made by a webhook has no author, the source PAYMENT and the attempt. A change made by the owner has the owner as author and the source STAFF.
