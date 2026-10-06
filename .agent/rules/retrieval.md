@@ -31,9 +31,11 @@ Reason: anything added to the text moves the vector and changes which card wins,
 
 ## The tier filter runs before the similarity search
 
-The query carries a SQL WHERE on the card's minimum tier, restricting to the tiers the member is allowed, and that filter is part of the same query as the distance ordering. Do not search first and filter the results afterwards.
+The query carries a SQL WHERE on the card's minimum tier, restricting to the plans the member is allowed, and that filter is part of the same query as the distance ordering. Do not search first and filter the results afterwards.
 
-Reason: a Premium card must never be a candidate for a Basic member, not even for the moment between search and filter. Pre-filtering also costs nothing at this card count, because the search is exact.
+The member's plan, FREE or PAID, comes from the one function in src/server/plan/ (data-model.md), worked out at the moment of the question. Do not read paid-until here, and do not store the plan.
+
+Reason: a PAID card must never be a candidate for a FREE member, not even for the moment between search and filter. Pre-filtering also costs nothing at this card count, because the search is exact.
 
 ## Take one card, then check the gate
 
@@ -70,7 +72,7 @@ ORDER BY ce.embedding <=> $1::vector
 LIMIT 1;
 ```
 
-Parameter one is the question embedding. Parameter two is the allowed tier array: BASIC only for a Basic member, BASIC and PREMIUM for a Premium member.
+Parameter one is the question embedding. Parameter two is the allowed tier array: FREE only for a FREE member, FREE and PAID for a PAID member. A FREE member never receives a training plan or trainer guidance card.
 
 ## Approval and embedding are one atomic step
 
