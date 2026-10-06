@@ -1,175 +1,103 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { getTestDb } from '../test-db';
-import { randomUUID } from 'node:crypto';
-import { createMember, findDuplicateMembers } from './members';
+import { findDuplicateMembers, listMembers } from './members';
 
-// Runs against the Neon test branch only. getTestDb refuses the main branch.
+// Runs against the Neon test branch only. getTestDb refuses the main branch. These tests need
+// both plan-model migrations applied to the test branch.
 const db = getTestDb();
 const run = `t${Date.now().toString(36)}`;
-const expiryDate = new Date(Date.UTC(2027, 0, 31));
+let counter = 0;
 
-let author: { id: string };
-
-beforeAll(async () => {
-  author = await db.staff.create({
-    data: { name: 'Test author', email: `${run}-author@test.invalid`, phone: `${run}-author`, whatsappNumber: '0' },
+function makeMember(label: string, extra: Partial<{ phone: string; paidUntil: Date; openingBalanceSet: boolean; claimsExistingMember: boolean; accessCardIssuedAt: Date }> = {}) {
+  counter += 1;
+  return db.member.create({
+    data: {
+      membershipId: `SPT-${run}-${counter}`,
+      name: `${run} ${label}`,
+      ...extra,
+    },
   });
-});
+}
 
 afterAll(async () => {
   await db.account.deleteMany({ where: { email: { startsWith: run } } });
   await db.member.deleteMany({ where: { name: { startsWith: run } } });
-  await db.staff.deleteMany({ where: { email: { startsWith: run } } });
   await db.$disconnect();
 });
 
-function input(label: string, tier: 'BASIC' | 'PREMIUM' = 'BASIC') {
-  return { name: `${run} ${label}`, tier, expiryDate, phone: null };
-}
+const day = (text: string) => new Date(`${text}T00:00:00Z`);
+const mine = <T extends { name: string }>(rows: T[]) => rows.filter((r) => r.name.startsWith(run));
 
-describe('createMember (FR-13)', () => {
-  it('gives every new member a unique ID in the form SPT-XXXX, and stores the author in the audit rows', async () => {
-    const a = await createMember(db, input('a'), author.id);
-    const b = await createMember(db, input('b', 'PREMIUM'), author.id);
-    expect(a.membershipId).toMatch(/^SPT-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{4}$/);
-    expect(b.membershipId).toMatch(/^SPT-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{4}$/);
-    expect(a.membershipId).not.toBe(b.membershipId);
-
-    const stored = await db.member.findUniqueOrThrow({
-      where: { id: b.id },
-      include: { changes: true, ledgerEntries: true },
-    });
-    expect(stored.tier).toBe('PREMIUM');
-    expect(stored.expiryDate.toISOString()).toBe('2027-01-31T00:00:00.000Z');
-    // Creating a member never sets the opening balance and writes no ledger entry.
-    expect(stored.openingBalanceSet).toBe(false);
-    expect(stored.ledgerEntries).toHaveLength(0);
-    // The audit rows record who set the starting values.
-    expect(stored.changes).toHaveLength(2);
-    const byField = Object.fromEntries(stored.changes.map((c) => [c.field, c]));
-    expect(byField.TIER).toMatchObject({ oldValue: '', newValue: 'PREMIUM', authorId: author.id });
-    expect(byField.EXPIRY).toMatchObject({ oldValue: '', newValue: '2027-01-31', authorId: author.id });
+describe('listMembers', () => {
+  beforeAll(async () => {
+    await makeMember('never paid');
+    await makeMember('paid', { paidUntil: day('2099-12-31'), accessCardIssuedAt: new Date() });
+    await makeMember('lapsed', { paidUntil: day('2020-01-31'), claimsExistingMember: true });
+    await makeMember('balance set', { openingBalanceSet: true, phone: '2348000000010' });
   });
 
-  it('retries when the generated ID is taken, and never saves the taken ID twice', async () => {
-    const first = await createMember(db, input('taken'), author.id);
-    const ids = [first.membershipId, first.membershipId, 'SPT-ZZZZ'];
-    const second = await createMember(db, input('retry'), author.id, () => ids.shift()!);
-    expect(second.membershipId).toBe('SPT-ZZZZ');
-    expect(await db.member.count({ where: { membershipId: first.membershipId } })).toBe(1);
-    const unchanged = await db.member.findUniqueOrThrow({ where: { membershipId: first.membershipId } });
-    expect(unchanged.name).toBe(`${run} taken`);
-    // The failed attempts left nothing behind: one member row and two audit rows per member.
-    const retried = await db.member.findUniqueOrThrow({ where: { id: second.id }, include: { changes: true } });
-    expect(retried.changes).toHaveLength(2);
+  it('works out each plan from the paid-until date, with nothing stored', async () => {
+    const rows = Object.fromEntries(mine(await listMembers(db)).map((r) => [r.name.slice(run.length + 1), r]));
+    expect(rows['never paid']).toMatchObject({ plan: 'FREE', paidThrough: null, accessCardIssued: false });
+    expect(rows['paid']).toMatchObject({ plan: 'PAID', paidThrough: '2099-12-31', accessCardIssued: true });
+    expect(rows['lapsed']).toMatchObject({ plan: 'FREE', paidThrough: '2020-01-31', claimsExistingMember: true });
+    expect(rows['balance set']).toMatchObject({ openingBalanceSet: true, phone: '2348000000010' });
   });
 
-  it('gives up with an error when every attempt collides, writing nothing', async () => {
-    const taken = await createMember(db, input('always-taken'), author.id);
-    const before = await db.member.count({ where: { name: { startsWith: run } } });
-    await expect(
-      createMember(db, input('never-saved'), author.id, () => taken.membershipId),
-    ).rejects.toThrow('unused membership ID');
-    expect(await db.member.count({ where: { name: { startsWith: run } } })).toBe(before);
+  it('writes nothing when listing a lapsed member', async () => {
+    const before = await db.member.findFirstOrThrow({ where: { name: `${run} lapsed` } });
+    await listMembers(db);
+    const after = await db.member.findFirstOrThrow({ where: { name: `${run} lapsed` } });
+    expect(after.updatedAt.toISOString()).toBe(before.updatedAt.toISOString());
+    expect(await db.memberChange.count({ where: { memberId: before.id } })).toBe(0);
   });
 
-  it('saves nothing when the audit rows cannot be written', async () => {
-    await expect(
-      createMember(db, input('atomic'), 'no-such-staff-id', () => 'SPT-YYYY'),
-    ).rejects.toThrow();
-    expect(await db.member.count({ where: { membershipId: 'SPT-YYYY' } })).toBe(0);
-  });
-
-  it('cannot create two members with the same ID, even by bypassing createMember', async () => {
-    const member = await createMember(db, input('unique'), author.id);
-    await expect(
-      db.member.create({
-        data: { membershipId: member.membershipId, name: `${run} dupe`, tier: 'BASIC', expiryDate },
-      }),
-    ).rejects.toThrow();
+  it('starts a new member with the opening balance unset and no card', async () => {
+    const member = await db.member.findFirstOrThrow({ where: { name: `${run} never paid` } });
+    expect(member.openingBalanceSet).toBe(false);
+    expect(member.claimsExistingMember).toBe(false);
+    expect(member.accessCardIssuedAt).toBeNull();
   });
 });
 
 describe('findDuplicateMembers', () => {
   it('finds the same name ignoring case, and the same phone, and ranks the phone match first', async () => {
-    const byName = await createMember(db, { ...input('Ada Obi'), name: `${run} Ada Obi`, phone: '2348000000001' }, author.id);
-    const byPhone = await createMember(db, { ...input('someone else'), phone: '2348000000002' }, author.id);
-
-    const matches = await findDuplicateMembers(db, { name: `${run} ADA OBI`, phone: '2348000000002' });
+    const byName = await makeMember('Ada Obi', { phone: '2348000000001' });
+    const byPhone = await makeMember('someone else', { phone: '2348000000002' });
+    const matches = await findDuplicateMembers(db, { name: `${run} ADA  OBI`, phone: '2348000000002' });
     expect(matches.map((m) => m.membershipId)).toEqual([byPhone.membershipId, byName.membershipId]);
     expect(matches[0]).toMatchObject({ phoneMatch: true, nameMatch: false });
     expect(matches[1]).toMatchObject({ phoneMatch: false, nameMatch: true });
   });
 
   it('reports a member with both the same name and the same phone as both matches', async () => {
-    const both = await createMember(db, { ...input('Both Match'), phone: '2348000000003' }, author.id);
+    const both = await makeMember('Both Match', { phone: '2348000000003' });
     const [match] = await findDuplicateMembers(db, { name: `${run} both match`, phone: '2348000000003' });
     expect(match).toMatchObject({ membershipId: both.membershipId, nameMatch: true, phoneMatch: true });
   });
 
-  it('shows the linked account and its email, or none', async () => {
-    const linked = await createMember(db, { ...input('Has Account'), phone: null }, author.id);
-    const unlinked = await createMember(db, { ...input('Has Account'), phone: null }, author.id);
+  it('shows the plan and the linked account email, or none', async () => {
+    const linked = await makeMember('Has Account', { paidUntil: day('2099-01-01') });
+    const unlinked = await makeMember('Has Account');
     await db.account.create({
       data: {
         name: 'Has Account',
         email: `${run}-linked@test.invalid`,
-        passwordHash: 'x',
-        claimedMembershipId: linked.membershipId,
-        status: 'LINKED',
+        phone: '',
+        claimsExistingMember: false,
+        status: 'ACTIVE',
         memberId: linked.id,
       },
     });
     const matches = await findDuplicateMembers(db, { name: `${run} has account`, phone: null });
     const byId = Object.fromEntries(matches.map((m) => [m.membershipId, m]));
-    expect(byId[linked.membershipId].account).toEqual({ email: `${run}-linked@test.invalid`, status: 'LINKED' });
-    expect(byId[unlinked.membershipId].account).toBeNull();
+    expect(byId[linked.membershipId]).toMatchObject({ plan: 'PAID', paidThrough: '2099-01-01' });
+    expect(byId[linked.membershipId].account).toEqual({ email: `${run}-linked@test.invalid`, status: 'ACTIVE' });
+    expect(byId[unlinked.membershipId]).toMatchObject({ plan: 'FREE', account: null });
   });
 
   it('returns nothing for a new name and a new phone, and ignores a null phone', async () => {
     expect(await findDuplicateMembers(db, { name: `${run} nobody by this name`, phone: '2348999999999' })).toEqual([]);
     expect(await findDuplicateMembers(db, { name: `${run} nobody by this name`, phone: null })).toEqual([]);
-  });
-});
-
-describe('createMember with a creation key', () => {
-  it('creates nothing the second time the same key arrives, and returns the first member', async () => {
-    const key = randomUUID();
-    const first = await createMember(db, input('keyed'), author.id, undefined, key);
-    const second = await createMember(db, input('keyed again'), author.id, undefined, key);
-    expect(first.existing).toBe(false);
-    expect(second).toMatchObject({ id: first.id, membershipId: first.membershipId, existing: true });
-    expect(await db.member.count({ where: { name: { startsWith: `${run} keyed` } } })).toBe(1);
-  });
-
-  it('lets exactly one of two simultaneous submits with the same key create a member', async () => {
-    const key = randomUUID();
-    const [a, b] = await Promise.all([
-      createMember(db, input('race'), author.id, undefined, key),
-      createMember(db, input('race'), author.id, undefined, key),
-    ]);
-    expect(a.membershipId).toBe(b.membershipId);
-    expect([a.existing, b.existing].sort()).toEqual([false, true]);
-    expect(await db.member.count({ where: { creationKey: key } })).toBe(1);
-    const stored = await db.member.findUniqueOrThrow({ where: { creationKey: key }, include: { changes: true } });
-    expect(stored.changes).toHaveLength(2);
-  });
-
-  it('still retries a taken membership ID when a key is present', async () => {
-    const taken = await createMember(db, input('key-taken'), author.id);
-    const ids = [taken.membershipId, 'SPT-KKKK'];
-    const created = await createMember(db, input('key-retry'), author.id, () => ids.shift()!, randomUUID());
-    expect(created).toMatchObject({ membershipId: 'SPT-KKKK', existing: false });
-  });
-
-  it('gives different keys different members', async () => {
-    const a = await createMember(db, input('two-keys'), author.id, undefined, randomUUID());
-    const b = await createMember(db, input('two-keys'), author.id, undefined, randomUUID());
-    expect(a.id).not.toBe(b.id);
-  });
-
-  it('works without a key, as before', async () => {
-    const a = await createMember(db, input('no-key'), author.id);
-    expect(a.existing).toBe(false);
   });
 });

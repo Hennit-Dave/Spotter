@@ -1,172 +1,28 @@
 import type { PrismaClient } from '../../../generated/prisma/client';
-import type { Tier } from '../../../generated/prisma/enums';
-import { generateMembershipId } from '../auth/membership-id';
-import { calendarDateText, parseCalendarDate } from '../time';
-import { normalisePhone } from './phone';
+import { PLAN_FIELDS, paidThrough, planFor, type Plan } from '../plan/plan';
 
-// Admin code. It reads and writes across members, so it runs only after the role check in the
-// route or action that calls it. It never uses a member-scoped helper (privacy.md).
-
-export const MAX_NAME_LENGTH = 100;
-const MAX_ID_ATTEMPTS = 10;
-
-export type MemberFormError = 'name' | 'tier' | 'expiry' | 'phone';
-
-export interface NewMemberInput {
-  name: string;
-  tier: Tier;
-  expiryDate: Date;
-  // International digits only, for example 2348074652543, or null when left blank.
-  phone: string | null;
-}
-
-export type MemberValidation =
-  | { ok: true; value: NewMemberInput; expired: boolean }
-  | { ok: false; error: MemberFormError };
-
-// Checks every field before anything is written. `today` is the Africa/Lagos calendar date as
-// YYYY-MM-DD. An expiry before today is allowed, because lapsed members must be enterable, but
-// the result says so, and the screen asks for a confirmation before it saves.
-export function validateNewMember(
-  raw: { name: string; tier: string; expiry: string; phone: string },
-  today: string,
-): MemberValidation {
-  const name = raw.name.trim().replace(/\s+/g, ' ');
-  if (name === '' || name.length > MAX_NAME_LENGTH) return { ok: false, error: 'name' };
-
-  if (raw.tier !== 'BASIC' && raw.tier !== 'PREMIUM') return { ok: false, error: 'tier' };
-
-  const expiryDate = parseCalendarDate(raw.expiry.trim());
-  if (!expiryDate) return { ok: false, error: 'expiry' };
-
-  const phoneText = raw.phone.trim();
-  let phone: string | null = null;
-  if (phoneText !== '') {
-    phone = normalisePhone(phoneText);
-    if (phone === null) return { ok: false, error: 'phone' };
-  }
-
-  return {
-    ok: true,
-    value: { name, tier: raw.tier, expiryDate, phone },
-    expired: calendarDateText(expiryDate) < today,
-  };
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    (error as { code?: unknown }).code === 'P2002'
-  );
-}
-
-export interface CreatedMember {
-  id: string;
-  membershipId: string;
-  // True when a member with this creation key already existed, so nothing new was saved.
-  existing: boolean;
-}
-
-// The key the add member form carries. A random UUID made on the server.
-export const CREATION_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-
-export function findMemberByCreationKey(
-  db: PrismaClient,
-  creationKey: string,
-): Promise<{ id: string; name: string; membershipId: string } | null> {
-  return db.member.findUnique({
-    where: { creationKey },
-    select: { id: true, name: true, membershipId: true },
-  });
-}
-
-// Creates a member with a system-generated membership ID. The member row and the audit rows
-// for the initial tier and expiry are written in one transaction, so none persists without the
-// others. Creating a member never sets the opening balance and writes no ledger entry.
-//
-// If the generated ID is already taken, the database refuses the insert, the transaction rolls
-// back, and a new ID is generated in a fresh transaction. A taken ID is never saved twice.
-// Nothing here changes an existing member's ID, so an ID is permanent.
-//
-// The creation key makes a repeated submit safe. If a member with this key already exists, or
-// another request with the same key wins the race, nothing new is saved and the existing member
-// is returned. The unique index on the key is what decides the race, not a check beforehand.
-export async function createMember(
-  db: PrismaClient,
-  input: NewMemberInput,
-  authorId: string,
-  generateId: () => string = generateMembershipId,
-  creationKey: string | null = null,
-): Promise<CreatedMember> {
-  if (creationKey !== null) {
-    const existing = await findMemberByCreationKey(db, creationKey);
-    if (existing) return { id: existing.id, membershipId: existing.membershipId, existing: true };
-  }
-  for (let attempt = 1; attempt <= MAX_ID_ATTEMPTS; attempt++) {
-    const membershipId = generateId();
-    try {
-      const created = await db.$transaction(async (tx) => {
-        const member = await tx.member.create({
-          data: {
-            membershipId,
-            creationKey,
-            name: input.name,
-            phone: input.phone,
-            tier: input.tier,
-            expiryDate: input.expiryDate,
-          },
-          select: { id: true, membershipId: true },
-        });
-        await tx.memberChange.createMany({
-          data: [
-            {
-              memberId: member.id,
-              field: 'TIER',
-              oldValue: '',
-              newValue: input.tier,
-              authorId,
-            },
-            {
-              memberId: member.id,
-              field: 'EXPIRY',
-              oldValue: '',
-              newValue: calendarDateText(input.expiryDate),
-              authorId,
-            },
-          ],
-        });
-        return member;
-      });
-      return { ...created, existing: false };
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        // Either the generated ID was taken, or another request with this key just saved.
-        if (creationKey !== null) {
-          const winner = await findMemberByCreationKey(db, creationKey);
-          if (winner) return { id: winner.id, membershipId: winner.membershipId, existing: true };
-        }
-        continue;
-      }
-      throw error;
-    }
-  }
-  throw new Error('Could not find an unused membership ID');
-}
+// Admin code. It reads across members, so it runs only after the role check in the route or
+// action that calls it. It never uses a member-scoped helper (privacy.md). Members are not created
+// here: they make themselves by signing up (FR-13 is removed).
 
 export interface MemberRow {
   id: string;
   membershipId: string;
   name: string;
+  // International digits only.
   phone: string | null;
-  tier: Tier;
-  expiryDate: Date;
+  plan: Plan;
+  // The date the member is paid through as YYYY-MM-DD, or null if they have never paid.
+  paidThrough: string | null;
+  claimsExistingMember: boolean;
+  openingBalanceSet: boolean;
+  accessCardIssued: boolean;
 }
 
 export const MEMBER_LIST_LIMIT = 100;
 
-export function listMembers(db: PrismaClient): Promise<MemberRow[]> {
-  return db.member.findMany({
+export async function listMembers(db: PrismaClient, now: Date = new Date()): Promise<MemberRow[]> {
+  const rows = await db.member.findMany({
     orderBy: { createdAt: 'desc' },
     take: MEMBER_LIST_LIMIT,
     select: {
@@ -174,20 +30,23 @@ export function listMembers(db: PrismaClient): Promise<MemberRow[]> {
       membershipId: true,
       name: true,
       phone: true,
-      tier: true,
-      expiryDate: true,
+      claimsExistingMember: true,
+      openingBalanceSet: true,
+      accessCardIssuedAt: true,
+      ...PLAN_FIELDS,
     },
   });
-}
-
-export function findMemberByMembershipId(
-  db: PrismaClient,
-  membershipId: string,
-): Promise<{ name: string; membershipId: string } | null> {
-  return db.member.findUnique({
-    where: { membershipId },
-    select: { name: true, membershipId: true },
-  });
+  return rows.map((row) => ({
+    id: row.id,
+    membershipId: row.membershipId,
+    name: row.name,
+    phone: row.phone,
+    plan: planFor(row, { now }),
+    paidThrough: paidThrough(row),
+    claimsExistingMember: row.claimsExistingMember,
+    openingBalanceSet: row.openingBalanceSet,
+    accessCardIssued: row.accessCardIssuedAt !== null,
+  }));
 }
 
 export interface DuplicateMember {
@@ -195,27 +54,29 @@ export interface DuplicateMember {
   membershipId: string;
   name: string;
   phone: string | null;
-  tier: Tier;
-  expiryDate: Date;
+  plan: Plan;
+  paidThrough: string | null;
   nameMatch: boolean;
   phoneMatch: boolean;
-  // The account linked to this member, if any, with its email.
+  // The account this member belongs to, with its email.
   account: { email: string; status: string } | null;
 }
 
 const DUPLICATE_LIMIT = 10;
 
-// Finds existing members with the same name (ignoring case, with extra spaces already
-// collapsed) or the same normalised phone number. Phone matches come first, because they are
-// the stronger sign it is the same person. This only warns. It never blocks.
+// Finds other members with the same name (ignoring case) or the same normalised phone number.
+// Phone matches come first, because they are the stronger sign it is the same person. This only
+// warns. The owner uses it to catch one person who signed up twice before entering a balance.
 export async function findDuplicateMembers(
   db: PrismaClient,
   candidate: { name: string; phone: string | null },
+  now: Date = new Date(),
 ): Promise<DuplicateMember[]> {
+  const name = candidate.name.trim().replace(/\s+/g, ' ');
   const rows = await db.member.findMany({
     where: {
       OR: [
-        { name: { equals: candidate.name, mode: 'insensitive' } },
+        { name: { equals: name, mode: 'insensitive' } },
         ...(candidate.phone ? [{ phone: candidate.phone }] : []),
       ],
     },
@@ -226,24 +87,22 @@ export async function findDuplicateMembers(
       membershipId: true,
       name: true,
       phone: true,
-      tier: true,
-      expiryDate: true,
       account: { select: { email: true, status: true } },
+      ...PLAN_FIELDS,
     },
   });
-  const wanted = candidate.name.toLowerCase();
+  const wanted = name.toLowerCase();
   return rows
     .map((row) => ({
-      ...row,
+      id: row.id,
+      membershipId: row.membershipId,
+      name: row.name,
+      phone: row.phone,
+      plan: planFor(row, { now }),
+      paidThrough: paidThrough(row),
+      account: row.account,
       nameMatch: row.name.trim().replace(/\s+/g, ' ').toLowerCase() === wanted,
       phoneMatch: candidate.phone !== null && row.phone === candidate.phone,
     }))
     .sort((a, b) => Number(b.phoneMatch) - Number(a.phoneMatch));
-}
-
-export function findMemberSummaryById(
-  db: PrismaClient,
-  id: string,
-): Promise<{ name: string; membershipId: string } | null> {
-  return db.member.findUnique({ where: { id }, select: { name: true, membershipId: true } });
 }
