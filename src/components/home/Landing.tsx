@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { LogoMark } from './LogoMark';
+import { ContactUs } from './ContactUs';
 import styles from './Landing.module.css';
 
 export function Landing() {
@@ -10,9 +11,7 @@ export function Landing() {
           <LogoMark />
           Spotter
         </Link>
-        <Link href="/log-in" prefetch={false} className={styles.navLink}>
-          Log in
-        </Link>
+        <ContactUs />
       </header>
       <main className={styles.main}>
         <section className={styles.hero} aria-labelledby="landing-title">

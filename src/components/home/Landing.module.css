@@ -27,15 +27,6 @@
   text-decoration: none;
 }
 
-.navLink {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: var(--size-tap);
-  color: inherit;
-  text-decoration: none;
-}
-
 .main {
   flex: 1;
   display: flex;
@@ -101,7 +92,6 @@
 
 .primary:hover { background: var(--color-primary-container); }
 .secondary:hover { background: var(--color-surface-container); }
-.navLink:hover { text-decoration: underline; text-underline-offset: 4px; }
 .page a:focus-visible { outline: 2px solid var(--color-secondary); outline-offset: 5px; }
 
 .note {
