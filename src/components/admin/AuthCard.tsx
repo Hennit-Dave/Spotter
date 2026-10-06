@@ -3,14 +3,14 @@ import type { ReactNode } from 'react';
 import styles from './AuthCard.module.css';
 
 export interface AuthNotice {
-  tone: 'error' | 'info';
+  tone: 'error' | 'info' | 'warning';
   text: string;
 }
 
 export function Notice({ notice }: { notice: AuthNotice }) {
   return (
     <p
-      className={`${styles.notice} ${notice.tone === 'error' ? styles.error : styles.info}`}
+      className={`${styles.notice} ${styles[notice.tone]}`}
       role={notice.tone === 'error' ? 'alert' : 'status'}
     >
       {notice.text}
@@ -44,6 +44,7 @@ export function TextField({
   required = true,
   min,
   maxLength,
+  defaultValue,
 }: {
   name: string;
   label: string;
@@ -52,6 +53,7 @@ export function TextField({
   required?: boolean;
   min?: string;
   maxLength?: number;
+  defaultValue?: string;
 }) {
   return (
     <div className={styles.field}>
@@ -66,6 +68,7 @@ export function TextField({
         required={required}
         min={min}
         maxLength={maxLength}
+        defaultValue={defaultValue}
         className={styles.input}
       />
     </div>
@@ -76,17 +79,19 @@ export function SelectField({
   name,
   label,
   options,
+  defaultValue,
 }: {
   name: string;
   label: string;
   options: Array<{ value: string; label: string }>;
+  defaultValue?: string;
 }) {
   return (
     <div className={styles.field}>
       <label htmlFor={name} className={styles.label}>
         {label}
       </label>
-      <select id={name} name={name} required className={styles.input}>
+      <select id={name} name={name} required defaultValue={defaultValue} className={styles.input}>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

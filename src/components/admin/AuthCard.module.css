@@ -49,6 +49,11 @@
   color: var(--color-on-secondary-container);
 }
 
+.warning {
+  background-color: var(--color-warning-container);
+  color: var(--color-on-warning-container);
+}
+
 .form {
   display: flex;
   flex-direction: column;
@@ -121,4 +126,15 @@
 
 select.input:focus-visible {
   outline: medium solid var(--color-secondary);
+}
+
+.buttonSecondary {
+  background-color: var(--color-neutral-container);
+  color: var(--color-on-neutral-container);
+}
+
+.button:disabled {
+  background-color: var(--color-neutral-variant-container);
+  color: var(--color-on-neutral-variant-container);
+  cursor: not-allowed;
 }
