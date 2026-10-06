@@ -1,3 +1,4 @@
+import { logOut } from '@/app/actions';
 import { COMMON_QUESTIONS } from './questions';
 import styles from './HomeShell.module.css';
 
@@ -6,6 +7,11 @@ export function HomeShell() {
     <main className={styles.shell}>
       <header className={styles.header}>
         <h1 className={styles.title}>Spotter</h1>
+        <form action={logOut}>
+          <button type="submit" className={styles.logOut}>
+            Log out
+          </button>
+        </form>
       </header>
 
       <section className={styles.statusStrip} aria-label="Membership status">
@@ -25,11 +31,7 @@ export function HomeShell() {
 
       <section className={styles.questionsSection} aria-label="Common questions">
         {COMMON_QUESTIONS.map((question) => (
-          <button
-            key={question}
-            type="button"
-            className={styles.questionButton}
-          >
+          <button key={question} type="button" className={styles.questionButton}>
             {question}
           </button>
         ))}

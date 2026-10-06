@@ -14,7 +14,28 @@
 
 .header {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logOut {
+  min-height: var(--size-tap);
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-neutral-container);
+  color: var(--color-on-neutral-container);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--type-label-large-dmsans-font-family);
+  font-size: var(--type-label-large-dmsans-font-size);
+  font-weight: var(--type-label-large-dmsans-font-weight);
+  line-height: var(--type-label-large-dmsans-line-height);
+  letter-spacing: var(--type-label-large-dmsans-letter-spacing);
+  cursor: pointer;
+}
+
+.logOut:focus-visible {
+  outline: medium solid var(--color-secondary);
 }
 
 .title {
