@@ -218,7 +218,7 @@ model MemberChange {
   createdAt        DateTime       @default(now())
 
   member           Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  author           Staff?         @relation(fields: [authorId], references: [id])
+  author           Staff?         @relation(fields: [authorId], references: [id], onDelete: Restrict)
   paymentAttempt   PaymentAttempt? @relation(fields: [paymentAttemptId], references: [id])
 
   @@index([memberId])
