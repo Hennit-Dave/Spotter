@@ -20,10 +20,6 @@ export function Landing() {
           <h1 id="landing-title" className={styles.title}>
             Your gym.<br /><span>On the record.</span>
           </h1>
-          <p className={styles.text}>
-            Ask about your gym, see your attendance and balance, check in, and pay for membership.
-            Answers come from your gym&apos;s own records, with a source and a date.
-          </p>
           <div className={styles.actions}>
             <Link href="/sign-up" prefetch={false} className={styles.primary}>
               Create account

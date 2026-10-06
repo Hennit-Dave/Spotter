@@ -68,15 +68,6 @@
 
 .title span { color: var(--color-secondary); }
 
-.text {
-  max-width: 560px;
-  margin-inline: auto;
-  font-size: var(--type-body-large-dmsans-font-size);
-  line-height: 1.7;
-  color: var(--color-on-surface-variant);
-  text-wrap: pretty;
-}
-
 .actions {
   display: flex;
   justify-content: center;
