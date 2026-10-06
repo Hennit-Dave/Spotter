@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { getTestDb } from '../test-db';
-import { createMember } from './members';
+import { createMember, findDuplicateMembers } from './members';
 
 // Runs against the Neon test branch only. getTestDb refuses the main branch.
 const db = getTestDb();
@@ -16,6 +16,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await db.account.deleteMany({ where: { email: { startsWith: run } } });
   await db.member.deleteMany({ where: { name: { startsWith: run } } });
   await db.staff.deleteMany({ where: { email: { startsWith: run } } });
   await db.$disconnect();
@@ -85,5 +86,47 @@ describe('createMember (FR-13)', () => {
         data: { membershipId: member.membershipId, name: `${run} dupe`, tier: 'BASIC', expiryDate },
       }),
     ).rejects.toThrow();
+  });
+});
+
+describe('findDuplicateMembers', () => {
+  it('finds the same name ignoring case, and the same phone, and ranks the phone match first', async () => {
+    const byName = await createMember(db, { ...input('Ada Obi'), name: `${run} Ada Obi`, phone: '2348000000001' }, author.id);
+    const byPhone = await createMember(db, { ...input('someone else'), phone: '2348000000002' }, author.id);
+
+    const matches = await findDuplicateMembers(db, { name: `${run} ADA OBI`, phone: '2348000000002' });
+    expect(matches.map((m) => m.membershipId)).toEqual([byPhone.membershipId, byName.membershipId]);
+    expect(matches[0]).toMatchObject({ phoneMatch: true, nameMatch: false });
+    expect(matches[1]).toMatchObject({ phoneMatch: false, nameMatch: true });
+  });
+
+  it('reports a member with both the same name and the same phone as both matches', async () => {
+    const both = await createMember(db, { ...input('Both Match'), phone: '2348000000003' }, author.id);
+    const [match] = await findDuplicateMembers(db, { name: `${run} both match`, phone: '2348000000003' });
+    expect(match).toMatchObject({ membershipId: both.membershipId, nameMatch: true, phoneMatch: true });
+  });
+
+  it('shows the linked account and its email, or none', async () => {
+    const linked = await createMember(db, { ...input('Has Account'), phone: null }, author.id);
+    const unlinked = await createMember(db, { ...input('Has Account'), phone: null }, author.id);
+    await db.account.create({
+      data: {
+        name: 'Has Account',
+        email: `${run}-linked@test.invalid`,
+        passwordHash: 'x',
+        claimedMembershipId: linked.membershipId,
+        status: 'LINKED',
+        memberId: linked.id,
+      },
+    });
+    const matches = await findDuplicateMembers(db, { name: `${run} has account`, phone: null });
+    const byId = Object.fromEntries(matches.map((m) => [m.membershipId, m]));
+    expect(byId[linked.membershipId].account).toEqual({ email: `${run}-linked@test.invalid`, status: 'LINKED' });
+    expect(byId[unlinked.membershipId].account).toBeNull();
+  });
+
+  it('returns nothing for a new name and a new phone, and ignores a null phone', async () => {
+    expect(await findDuplicateMembers(db, { name: `${run} nobody by this name`, phone: '2348999999999' })).toEqual([]);
+    expect(await findDuplicateMembers(db, { name: `${run} nobody by this name`, phone: null })).toEqual([]);
   });
 });
