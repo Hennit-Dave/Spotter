@@ -97,8 +97,8 @@ describe('an email token has exactly one owner', () => {
       data: {
         name: 'Test both',
         email: `${run}-both@test.invalid`,
-        passwordHash: 'x',
-        claimedMembershipId: 'SPT-TEST',
+        phone: '',
+        claimsExistingMember: false,
       },
     });
     await expect(
