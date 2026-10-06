@@ -66,6 +66,12 @@ Reason: the expiry column holds a timestamp, but the owner thinks in days. Stori
 
 **Creating a member writes an audit row for the initial tier and the initial expiry,** with an empty old value, the new value, and the author, in the same transaction as the member row. Reason: it records who set the starting values and when, using the audit table that already exists. Creating a member never sets the opening balance flag and never writes a ledger entry.
 
+**A phone number is stored as international digits only.** Staff may type a number in local or international form, for example 0807 465 2543 or +234 807 465 2543. Store it as digits with the country code and nothing else, for example 2348074652543, the same format as the staff WhatsApp number. No plus sign, spaces, dashes or brackets are stored.
+
+The conversion: remove spaces, dashes, dots and brackets. A leading plus or 00 means the number already has its country code, so keep the digits (8 to 15 of them, first digit not 0). A Nigerian number is 234 followed by 10 digits, and a stray 0 after 234 is dropped. An 11 digit number starting with 0, or a 10 digit number starting with 7, 8 or 9, is a Nigerian local number and gets 234 in front. Anything else is rejected, never guessed.
+
+Reason: one stored form means the same person typed two ways is the same number, so a duplicate check can compare them and a WhatsApp link can be built from the stored value.
+
 **Payment purpose is a fixed set.** A payment attempt carries a purpose of RENEWAL or BALANCE only, as an enum, not free text.
 
 Reason: free text invites a purpose like "upgrade" that implies the system acts on it. It does not. See payments.md.
