@@ -6,7 +6,7 @@ export function Landing() {
     <div className={styles.page}>
       <header className={styles.header}>
         <Link href="/" className={styles.brand} aria-label="Spotter home">
-          <span className={styles.brandMark} aria-hidden="true">s.</span>
+          <span className={styles.brandMark} aria-hidden="true">S</span>
           Spotter
         </Link>
         <Link href="/log-in" prefetch={false} className={styles.navLink}>

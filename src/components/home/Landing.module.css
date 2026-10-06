@@ -37,6 +37,8 @@
   background: var(--color-primary);
   color: var(--color-on-primary);
   font-size: var(--type-headline-large-dmsans-font-size);
+  letter-spacing: 0;
+  line-height: 1;
 }
 
 .navLink {
