@@ -98,6 +98,14 @@ describe('the password reset email limit', () => {
     expect(ATTEMPT_RULES.ADMIN_LOGIN).toEqual({ limit: ATTEMPT_LIMIT, windowMs: ATTEMPT_WINDOW_MS });
   });
 
+  it('limits verification emails the same way, separately from reset emails', async () => {
+    expect(ATTEMPT_RULES.VERIFICATION_EMAIL).toEqual({ limit: 3, windowMs: HOUR });
+    const store = fakeStore([]);
+    for (let i = 0; i < 3; i++) expect(await takeAttempt(store, 'VERIFICATION_EMAIL', 'a@b.co')).toBe(true);
+    expect(await takeAttempt(store, 'VERIFICATION_EMAIL', 'a@b.co')).toBe(false);
+    expect(await takeAttempt(store, 'PASSWORD_RESET_EMAIL', 'a@b.co')).toBe(true);
+  });
+
   it('allows three requests and refuses the fourth', async () => {
     const rows: Row[] = [];
     const store = fakeStore(rows);

@@ -19,6 +19,7 @@ export const ATTEMPT_RULES: Record<AttemptKind, AttemptRule> = {
   ADMIN_LOGIN: WRONG_TRY_RULE,
   CHECK_IN_CODE: WRONG_TRY_RULE,
   PASSWORD_RESET_EMAIL: { limit: 3, windowMs: 60 * 60 * 1000 },
+  VERIFICATION_EMAIL: { limit: 3, windowMs: 60 * 60 * 1000 },
 };
 
 export interface AttemptStore {
