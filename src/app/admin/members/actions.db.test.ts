@@ -19,6 +19,7 @@ vi.mock('next/headers', () => ({
     },
   }),
 }));
+vi.mock('next/cache', () => ({ revalidatePath: () => {} }));
 vi.mock('next/navigation', () => ({
   redirect: (url: string) => {
     throw new Error(`REDIRECT ${url}`);
@@ -29,6 +30,7 @@ import { getDb } from '@/server/db';
 import { getSessionSecret, signSession } from '@/server/auth/cookie';
 import { startAdminSession } from '@/server/auth/admin-session';
 import { addMember } from './actions';
+import { INITIAL_STATE, type AddMemberState } from './form-state';
 
 const db = getDb();
 const run = `t${Date.now().toString(36)}`;
@@ -40,10 +42,19 @@ function form(fields: Record<string, string>): FormData {
 }
 
 const farFuture = '2099-12-31';
+const lapsed = '2020-01-31';
 const good = (label: string) => ({ name: `${run} ${label}`, tier: 'BASIC', expiry: farFuture, phone: '' });
+
+const submit = (fields: Record<string, string>): Promise<AddMemberState> =>
+  addMember(INITIAL_STATE, form(fields));
 
 async function memberCount() {
   return db.member.count({ where: { name: { startsWith: run } } });
+}
+
+function done(state: AddMemberState): string {
+  if (state.step !== 'form' || !state.done) throw new Error(`expected a saved member, got ${JSON.stringify(state).slice(0, 200)}`);
+  return state.done;
 }
 
 async function redirectOf(promise: Promise<unknown>): Promise<string> {
@@ -74,36 +85,32 @@ beforeEach(() => {
 });
 
 afterAll(async () => {
+  await db.account.deleteMany({ where: { email: { startsWith: run } } });
   await db.member.deleteMany({ where: { name: { startsWith: run } } });
   await db.staff.deleteMany({ where: { email: { startsWith: run } } });
   await db.$disconnect();
 });
 
-describe('the add member action (FR-13, gate: admin read unreachable without a staff role)', () => {
+describe('who may use the add member action (gate: admin read unreachable without a staff role)', () => {
   it('sends a visitor with no session to sign in and creates nothing', async () => {
-    expect(await redirectOf(addMember(form(good('anon'))))).toBe('/admin/log-in');
+    expect(await redirectOf(submit(good('anon')))).toBe('/admin/log-in');
     expect(await memberCount()).toBe(0);
   });
 
   it('refuses a member session cookie', async () => {
     const exp = Math.floor(Date.now() / 1000) + 600;
     cookieValue = signSession({ kind: 'member', id: staff.id, v: 0, exp }, getSessionSecret());
-    expect(await redirectOf(addMember(form(good('member-cookie'))))).toBe('/admin/log-in');
+    expect(await redirectOf(submit(good('member-cookie')))).toBe('/admin/log-in');
     expect(await memberCount()).toBe(0);
   });
 
   it('lets STAFF create a member, and stores that staff member as the author', async () => {
     await startAdminSession(staff);
-    const url = await redirectOf(addMember(form({ ...good('by-staff'), tier: 'PREMIUM', phone: '0803 123 4567' })));
-    expect(url).toMatch(/^\/admin\/members\?created=SPT-[A-Z2-9]{4}$/);
-
-    const member = await db.member.findFirstOrThrow({
-      where: { name: `${run} by-staff` },
-      include: { changes: true },
-    });
-    expect(url).toContain(member.membershipId);
+    const message = done(await submit({ ...good('by-staff'), tier: 'PREMIUM', phone: '0803 123 4567' }));
+    const member = await db.member.findFirstOrThrow({ where: { name: `${run} by-staff` }, include: { changes: true } });
+    expect(message).toContain(member.membershipId);
     expect(member.tier).toBe('PREMIUM');
-    expect(member.phone).toBe('0803 123 4567');
+    expect(member.phone).toBe('2348031234567');
     expect(member.openingBalanceSet).toBe(false);
     expect(member.changes).toHaveLength(2);
     expect(member.changes.every((c) => c.authorId === staff.id)).toBe(true);
@@ -111,28 +118,131 @@ describe('the add member action (FR-13, gate: admin read unreachable without a s
 
   it('lets the OWNER create a member too', async () => {
     await startAdminSession(owner);
-    const url = await redirectOf(addMember(form(good('by-owner'))));
-    expect(url).toMatch(/created=SPT-/);
+    done(await submit(good('by-owner')));
     const member = await db.member.findFirstOrThrow({ where: { name: `${run} by-owner` }, include: { changes: true } });
     expect(member.changes.every((c) => c.authorId === owner.id)).toBe(true);
   });
+});
 
-  it('rejects an invalid entry with a message and writes nothing', async () => {
+describe('validation', () => {
+  it('rejects an invalid entry with a message, keeps what was typed, and writes nothing', async () => {
     await startAdminSession(staff);
     const before = await memberCount();
-    expect(await redirectOf(addMember(form({ ...good('x'), name: '   ' })))).toBe('/admin/members?e=name');
-    expect(await redirectOf(addMember(form({ ...good('x'), tier: 'ADMIN' })))).toBe('/admin/members?e=tier');
-    expect(await redirectOf(addMember(form({ ...good('x'), expiry: '2020-01-01' })))).toBe('/admin/members?e=expiry_past');
-    expect(await redirectOf(addMember(form({ ...good('x'), expiry: 'soon' })))).toBe('/admin/members?e=expiry');
-    expect(await redirectOf(addMember(form({ ...good('x'), phone: 'call me' })))).toBe('/admin/members?e=phone');
+    for (const bad of [{ name: '   ' }, { tier: 'ADMIN' }, { expiry: 'soon' }, { phone: 'call me' }, { phone: '0803123456' }]) {
+      const state = await submit({ ...good('x'), ...bad });
+      expect(state.step).toBe('form');
+      if (state.step === 'form') {
+        expect(state.error).not.toBeNull();
+        expect(state.values.name).toBe(bad.name ?? `${run} x`);
+      }
+    }
     expect(await memberCount()).toBe(before);
   });
 
   it('ignores a membership ID typed into the form: the system makes it', async () => {
     await startAdminSession(staff);
-    const url = await redirectOf(addMember(form({ ...good('typed-id'), membershipId: 'SPT-AAAA' })));
+    done(await submit({ ...good('typed-id'), membershipId: 'SPT-AAAA' }));
     const member = await db.member.findFirstOrThrow({ where: { name: `${run} typed-id` } });
     expect(member.membershipId).not.toBe('SPT-AAAA');
-    expect(url).toContain(member.membershipId);
+  });
+});
+
+describe('an expiry before today', () => {
+  it('asks first, saves nothing until confirmed, then saves the lapsed member', async () => {
+    await startAdminSession(staff);
+    const asked = await submit({ ...good('lapsed'), expiry: lapsed });
+    expect(asked.step).toBe('confirmExpired');
+    expect(await db.member.count({ where: { name: `${run} lapsed` } })).toBe(0);
+
+    done(await submit({ ...good('lapsed'), expiry: lapsed, confirmExpired: '1' }));
+    const member = await db.member.findFirstOrThrow({ where: { name: `${run} lapsed` } });
+    expect(member.expiryDate.toISOString()).toBe('2020-01-31T00:00:00.000Z');
+  });
+
+  it('"Go back" keeps what was typed and saves nothing', async () => {
+    await startAdminSession(staff);
+    const state = await submit({ ...good('back'), expiry: lapsed, back: '1' });
+    expect(state).toMatchObject({ step: 'form', error: null, values: { name: `${run} back`, expiry: lapsed } });
+    expect(await db.member.count({ where: { name: `${run} back` } })).toBe(0);
+  });
+});
+
+describe('possible duplicates warn, and never block', () => {
+  it('warns about the same name, ignoring case, and shows the existing member', async () => {
+    await startAdminSession(staff);
+    done(await submit({ ...good('Grace Eze'), name: `${run} Grace Eze`, phone: '0803 000 0001' }));
+    const existing = await db.member.findFirstOrThrow({ where: { name: `${run} Grace Eze` } });
+    const before = await memberCount();
+
+    const state = await submit({ ...good('x'), name: `${run} GRACE  EZE` });
+    expect(state.step).toBe('duplicates');
+    if (state.step !== 'duplicates') return;
+    expect(state.matches).toHaveLength(1);
+    expect(state.matches[0]).toMatchObject({
+      membershipId: existing.membershipId,
+      phone: '2348030000001',
+      tier: 'BASIC',
+      nameMatch: true,
+      phoneMatch: false,
+      accountEmail: null,
+    });
+    expect(await memberCount()).toBe(before);
+  });
+
+  it('treats the same phone typed another way as a stronger match, and shows a linked account email', async () => {
+    await startAdminSession(staff);
+    done(await submit({ ...good('Phone Owner'), phone: '+234 803 000 0002' }));
+    const existing = await db.member.findFirstOrThrow({ where: { name: `${run} Phone Owner` } });
+    await db.account.create({
+      data: {
+        name: 'Phone Owner',
+        email: `${run}-phone@test.invalid`,
+        passwordHash: 'x',
+        claimedMembershipId: existing.membershipId,
+        status: 'LINKED',
+        memberId: existing.id,
+      },
+    });
+
+    const state = await submit({ ...good('A different name'), phone: '0803 000 0002' });
+    expect(state.step).toBe('duplicates');
+    if (state.step !== 'duplicates') return;
+    expect(state.matches[0]).toMatchObject({
+      membershipId: existing.membershipId,
+      phoneMatch: true,
+      nameMatch: false,
+      accountEmail: `${run}-phone@test.invalid`,
+    });
+  });
+
+  it('"Use this member" saves nothing and shows that member\'s ID', async () => {
+    await startAdminSession(staff);
+    done(await submit({ ...good('Use Me') }));
+    const existing = await db.member.findFirstOrThrow({ where: { name: `${run} Use Me` } });
+    const before = await memberCount();
+
+    const message = done(await submit({ ...good('Use Me'), useMember: existing.id }));
+    expect(message).toContain(existing.membershipId);
+    expect(await memberCount()).toBe(before);
+  });
+
+  it('"No, create a new member" saves a second record, so a warning never blocks', async () => {
+    await startAdminSession(staff);
+    done(await submit({ ...good('Twin') }));
+    const asked = await submit({ ...good('Twin') });
+    expect(asked.step).toBe('duplicates');
+    done(await submit({ ...good('Twin'), confirmNew: '1' }));
+    expect(await db.member.count({ where: { name: `${run} Twin` } })).toBe(2);
+  });
+
+  it('carries the expired confirmation through the duplicate step', async () => {
+    await startAdminSession(staff);
+    done(await submit({ ...good('Both Warnings') }));
+    const first = await submit({ ...good('Both Warnings'), expiry: lapsed });
+    expect(first.step).toBe('confirmExpired');
+    const second = await submit({ ...good('Both Warnings'), expiry: lapsed, confirmExpired: '1' });
+    expect(second).toMatchObject({ step: 'duplicates', confirmedExpired: true });
+    done(await submit({ ...good('Both Warnings'), expiry: lapsed, confirmExpired: '1', confirmNew: '1' }));
+    expect(await db.member.count({ where: { name: `${run} Both Warnings` } })).toBe(2);
   });
 });
