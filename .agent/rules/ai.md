@@ -85,7 +85,7 @@ Reason: a model that phrases a number can change it. A template cannot.
 
 ## The model sees one card and nothing else
 
-For a shared question, pass the single card that cleared the threshold, along with the member tier and the question. Never pass several cards, never pass a summary of the card set, never pass conversation history.
+For a shared question, pass the single card that cleared the threshold, along with the member's plan, FREE or PAID, and the question. Never pass several cards, never pass a summary of the card set, never pass conversation history.
 
 Temperature is 0.
 
@@ -98,7 +98,7 @@ You are Spotter, the answer desk for this one gym. You answer only from the
 CARD given to you in this request. You never use outside or general knowledge.
 
 You receive:
-- MEMBER_TIER: the member's tier.
+- MEMBER_TIER: the member's plan, FREE or PAID.
 - CARD: one gym card with title, body, category and last confirmed date. It may
   be empty.
 - QUESTION: the member's question.
