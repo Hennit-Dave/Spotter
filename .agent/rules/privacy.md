@@ -71,6 +71,12 @@ Question text may be stored in the app's own database with the member ID, becaus
 
 Reason: the gym's own database is the boundary. Outside it, identity plus content is a leak.
 
+## The verification page shows details only to the holder of the link
+
+The verification page shows the name, phone and answer given at sign-up so the person can check them. It shows them only to someone holding a valid, unused, unexpired link, and never in a URL, a log or an email. A used or expired link shows nothing about the account.
+
+Reason: the details are personal and the page is public. The link is the only proof that the viewer controls the inbox.
+
 ## Email addresses go to one provider, for one purpose
 
 An account's email address is sent to the email provider only to deliver the two account emails described in auth.md. Never send an email address, an account name, or a membership ID to the model or to any other third party.
@@ -87,7 +93,7 @@ Reason: the PRD leaves retention open. A deletion job built on a guess destroys 
 
 **Approved exception two (D37):** UNVERIFIED accounts older than 2 months may be deleted, by the same kind of rule: the cleanup runs inside the code that writes a new sign-up, deletes in the same call, and there is no scheduled job. The delete filters on status UNVERIFIED and age only, in the Account table only. It deletes that account's email tokens with it. An UNVERIFIED account has no member, so no member record, ledger entry or attendance row is touched. An ACTIVE account is never deleted by it.
 
-Reason: an account that never verified holds a name, phone and email that serve no purpose. FREE accounts never expire, so without a cleanup, abandoned sign-ups would pile up.
+Reason: an account that never verified holds a name, phone and email and no password, and serves no purpose. FREE accounts never expire, so without a cleanup, abandoned sign-ups would pile up.
 
 ## Checks before merge
 
@@ -96,6 +102,7 @@ Reason: an account that never verified holds a name, phone and email that serve 
 - No admin read runs without a staff role check.
 - An existing member's opening balance cannot be saved without the owner's identity confirmation.
 - The Account cleanup deletes only UNVERIFIED accounts older than 2 months.
+- The verification page shows no details without a valid, unused link.
 - No private model appears in any embedding or vector insert path.
 - No private query runs in a client component.
 - Name-stripping runs before every model call.
