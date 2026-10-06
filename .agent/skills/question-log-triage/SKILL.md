@@ -20,7 +20,7 @@ Check: you have two lists and a count for each.
 Put each one in exactly one bucket:
 
 - Bucket A, no card exists. The gym has never written down this answer.
-- Bucket B, a card exists but was not found. The answer is in an approved card the member's tier allows, and the app still handed off.
+- Bucket B, a card exists but was not found. The answer is in an approved card the member's plan allows, and the app still handed off.
 - Bucket C, a refusal was missed. The app answered something it should have refused.
 
 To decide between A and B, search the approved cards yourself for the answer.
