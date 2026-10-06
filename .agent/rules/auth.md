@@ -6,80 +6,63 @@ globs: src/server/auth/**,src/proxy.ts
 
 # auth.md
 
-One job: how a person creates an account, proves who they are, and gets connected to a gym member record.
+One job: how a person creates an account, proves they own the inbox, and becomes a member.
 
-Read privacy.md for what a linked account may read. Read data-model.md for the Account, EmailToken and Member models.
+Read privacy.md for what a signed-in member may read. Read data-model.md for the Account, EmailToken and Member models.
 
-## An account is not a member
+## A verified account becomes a member
 
-Anyone can create an account. A new account reaches no private record and no card. It reaches a member's records only after staff link it to that member.
+Anyone can sign up. There is no desk step. When the person verifies their email, the system creates their Member record, with its membership ID, in the same transaction that makes the account ACTIVE. Until then the account has no member and reaches no private record and no card.
 
-Reason: owning an email address proves nothing about gym membership. The desk knows the members, so the desk is the identity check.
+Reason: owning an inbox is what the system can check, so that is what makes a member. Doing both writes in one transaction means there is never an ACTIVE account without a member.
 
-## The desk assigns the membership ID first
-
-Staff create the member record before the member signs up. The system generates the membership ID at that moment, and staff give it to the member.
+## The membership ID is generated at verification
 
 Format: `SPT-` followed by four characters. The characters are the uppercase letters A to Z without I, L and O, and the digits 2 to 9. That is 31 characters.
 
-The system generates the four characters at random, checks the ID is unused, and retries on a collision. Staff never type an ID. An ID is permanent and never reused, even after a member leaves.
+The system generates the four characters at random, checks the ID is unused, and retries on a collision. Nobody types an ID. An ID is permanent and never reused. It is a reference for the desk, for example when issuing an access card. It grants no access.
+
+If the ID is taken, the database refuses the insert and the whole transaction rolls back. Generate a new ID and try again in a fresh transaction, up to a small fixed number of times.
 
 Reason: random IDs cannot be guessed by trying the next number. The removed characters are the ones people misread when copying an ID off paper.
 
-## Normalise the ID on input
-
-Accept the ID in any case, with or without the dash, and with surrounding spaces. Convert it to `SPT-XXXX` in uppercase before storing or comparing.
-
-Reason: `spt7k4q` and `SPT-7K4Q` are the same ID to a member, and they must be to the app.
-
 ## Sign up
 
-Fields, all required: name, email, password, membership ID.
+Fields, all required: name, email, password, phone, and one question: "Already a member at the gym?", answered Yes or No.
 
 Store the email in lowercase, trimmed, and compare it in lowercase everywhere. This applies to every email in the system, member Account and Staff alike.
 
-Create the account with status UNVERIFIED and store the normalised ID as the claim. Do not link it.
+The phone is stored as international digits only, by the rule in data-model.md. A phone that cannot be placed is rejected with a message. That message says nothing about whether any account exists.
 
-The sign-up response is the same whether or not the claimed ID exists, and whether or not it is already linked.
+Create the account with status UNVERIFIED, holding the name, phone and answer. Create no member.
 
 Passwords are at least 8 characters and at most 1,000, with no rules about mixing character types. Store them only as an argon2id hash, with a memory cost of 19,456 KiB, a time cost of 2 and a parallelism of 1. Never log a password or return it from any endpoint. These settings apply to members and staff alike and live in one place, src/server/auth/password.ts. Change them only with the human's approval.
 
 When there is no stored hash, such as an unknown email or a staff account that has not set a password, still do the same hashing work against a throwaway value before refusing. The response time must not reveal whether the account exists.
 
-Reason: a sign-up page that says "that ID belongs to someone else" tells a stranger which IDs are real. Length matters more than character rules, and character rules push people toward passwords they forget. The 1,000 character ceiling stops one enormous input from tying up the server.
+**Signing up with an email that already has an account.** If the email belongs to an UNVERIFIED account, replace that account's name, phone, answer and password with the new ones, and send a new verification link, inside the limit below. If the email belongs to an ACTIVE account, change nothing and send nothing. An ACTIVE account's email is never replaced. In every case the sign-up response is the same as for a brand new email.
+
+**Cleaning up.** Each time a new sign-up is written, delete UNVERIFIED accounts older than 2 months. There is no scheduled job. The rule and its limits are in privacy.md.
+
+Reason: a sign-up page that says "that email already has an account" tells a stranger which emails are members. Replacing an unverified account lets a person who mistyped, or never got the first email, try again. Length matters more than character rules, and character rules push people toward passwords they forget. The 1,000 character ceiling stops one enormous input from tying up the server.
 
 ## Verify the email
 
-After sign up, send one verification email containing a single-use link. When the link is used, set the account to PENDING_LINK and record the time.
+After sign up, send one verification email containing a single-use link. When the link is used, do these in one transaction:
+
+1. Set the account to ACTIVE and record the verification time.
+2. Create the Member: the account's name and phone, the account's answer as claimsExistingMember, a generated membership ID, no paid time, and the opening-balance flag set only if the answer was No. A Yes answer leaves it unset.
+3. Set the account's member link to the new member.
+
+If any step fails, none persists. Using the link a second time creates no second member: a used link does nothing.
 
 The link expires after 24 hours. Store only a hash of the token. A used or expired link does nothing except offer to send a new one.
 
-An unverified account may sign in, but sees only a screen asking it to verify, with a button to resend the link.
+**A verification email is sent at most 3 times per email address per hour,** counting both the first and every resend. Count every request in the FailedAttempt table with the kind VERIFICATION_EMAIL and the lowercase email as the key, whether or not an account exists. Once 3 have been counted in the last hour, send nothing. The person sees the same confirmation either way.
 
-Reason: verification proves the person owns the inbox, which is what makes a password reset by email safe later.
+An unverified account may sign in, but sees only a screen asking it to verify, with a button to resend the link. It reaches no card and no record, and cannot check in or pay.
 
-## Desk linking
-
-Staff see every PENDING_LINK account on an admin screen, showing the account name, email and claimed ID, beside the name on the member record that ID points to. Staff tap Link or Reject.
-
-The app raises flags. It never links on its own.
-
-- The claimed ID matches no member: flag NO_SUCH_ID.
-- The account name differs from the record name, ignoring case and extra spaces: flag NAME_MISMATCH. Staff may still link, after checking in person.
-- The record is already linked to another account: flag ALREADY_LINKED and block the link.
-- Two pending accounts claim the same ID: flag both DUPLICATE_CLAIM. Link neither until staff choose one. When one is linked, reject the other.
-
-Linking sets the account's member link, status LINKED, the linking staff member and the time, in one transaction.
-
-Reason: a membership ID can be seen, shared or copied. A person who knows the members confirming each link is what stops someone claiming a friend's record.
-
-## Before linking
-
-An account that is UNVERIFIED, PENDING_LINK or REJECTED sees only a waiting screen and a way to sign out. The waiting screen says the account is not linked to a membership yet and the front desk will connect it.
-
-It sees no card, no record, and cannot check in or pay.
-
-Reason: until a person at the desk has confirmed who this is, the app does not know whether they are a member at all.
+Reason: verification proves the person owns the inbox, which is what makes a password reset by email safe later. The limit protects the free email plan, which allows 100 emails a day, from being used up by one person.
 
 ## Sign in
 
@@ -103,17 +86,17 @@ A reset email is sent at most 3 times per email address per hour. Count every re
 
 Reason: the reset form is public and the free email plan allows 100 emails a day. Without a limit, anyone could use up the day's emails, or flood one person's inbox.
 
-Setting a new password ends every other session for that account, by adding one to the account's session version. It does not change the account's link. See The session.
+Setting a new password ends every other session for that account, by adding one to the account's session version. It does not change the account's member link. See The session.
 
 Reason: a reset link is a key to the account, so it must be short-lived and usable once. Ending other sessions locks out whoever caused the reset to be needed.
 
 ## Exactly two emails
 
-The app sends two kinds of email and no others: email verification and password reset. Each is sent only because the person just asked for it. A staff or owner password reset is the same reset email.
+The app sends two kinds of email and no others: email verification and password reset. Each is sent only because the person just asked for it, and each has its own limit of 3 per email address per hour. A staff or owner password reset is the same reset email.
 
 No welcome email, no receipts by email, no reminders, no nudges, no marketing.
 
-Emails go through Resend. The free plan sends at most 100 emails a day. If more people sign up in one day than that allows, the emails stop until the next day, so members are onboarded in batches.
+Emails go through Resend. The free plan sends at most 100 emails a day. If more people sign up in one day than that allows, the emails stop until the next day.
 
 The sending domain must be verified with Resend before launch. Ask the human which domain.
 
@@ -135,11 +118,11 @@ The session is a signed httpOnly cookie carrying the account ID and the account'
 
 On every request, the server also compares the cookie's session version with the one stored on the account. A mismatch means the session has ended: treat the person as signed out. A password reset adds one to the stored version, which ends every other session at once.
 
-On every request, the server loads the account and reads its member link. A private read uses that member link and nothing else. If the link is empty, there is no private read.
+On every request, the server loads the account and reads its member link. A private read uses that member link and nothing else. If the account is not ACTIVE, or the link is empty, there is no private read.
 
 Do not put the account ID or member ID in local storage, a client-readable cookie, or a URL.
 
-Reason: the member link is the only thing staff have vouched for. Reading it fresh on the server means an unlinked or rejected account can never act as a member.
+Reason: the member link is only ever set by the system, at verification. Reading it fresh on the server means an unverified account can never act as a member.
 
 ## Staff and owner sign in with email and password
 
@@ -155,8 +138,8 @@ Decided 2026-10-05 (D25). Staff and owner sign in with email and password, the s
 
 **The admin session is its own cookie.** It is a signed httpOnly cookie with a different name from the member cookie, set with Path=/admin. Its signed payload carries the kind admin, the staff ID and the staff session version. A member cookie never passes an admin check, and an admin cookie never passes a member check.
 
-**The role is checked before every admin read or write.** On every admin request the server loads the staff row fresh, confirms the account is active, compares the session version, and checks the role. Owner-only actions need OWNER: approve cards, enter or change the opening balance, change a member's tier or expiry after the member is created, enter cash and transfers, create or deactivate staff, and read the weekly review. A STAFF role cannot reach them.
+**The role is checked before every admin read or write.** On every admin request the server loads the staff row fresh, confirms the account is active, compares the session version, and checks the role. Owner-only actions need OWNER: approve cards, enter an existing member's opening balance and add charges, change a member's paid-until date or existing-member answer, enter cash and transfers (for membership or for a balance), set the monthly price, create or deactivate staff, and read the weekly review. A STAFF role cannot reach them.
 
-Both OWNER and STAFF may draft and edit cards, create a member with an initial tier and expiry (the system generates the membership ID), link or reject new accounts, set the daily check-in code, record a manual check-in, and set who is on duty. Creating a member does not set the opening balance. Every later tier or expiry change is audited, per data-model.md. Deactivating a staff member, or a password reset, ends their sessions.
+Both OWNER and STAFF may draft and edit cards, read the member list, mark or un-mark a member's access card, set the daily check-in code, record a manual check-in, and set who is on duty. Nobody creates a member by hand: members make themselves by signing up. Every change to paid-until, the existing-member answer or the access card is audited, per data-model.md. Deactivating a staff member, or a password reset, ends their sessions.
 
 Reason: admin screens read across members and write records. They must never share a session with the member app, and a role stored only in the cookie could not be taken back when someone leaves. Reading the row fresh on each request means a removed or demoted person loses access immediately.
