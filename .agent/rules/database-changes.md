@@ -46,6 +46,18 @@ Say in the proposal how the change is undone. If a change cannot be undone, say 
 
 Reason: the answer to "can we roll this back" must be known before the change, not discovered after it.
 
+## Enums, counts, restore points and order
+
+PostgreSQL cannot drop one value from an enum. Removing a value means renaming the type, creating the new one, converting the column, and dropping the old type. Say so in the proposal, and give the exact SQL and its undo. Renaming a value in place keeps every row.
+
+With each proposal, give the human read-only count queries to run first, so the effect on existing rows is known before the migration runs.
+
+Before a migration that drops a column or a table, remind the human to take a Neon restore point first. Dropped data cannot be rebuilt from an undo statement.
+
+A schema change goes to the dev branch first, then the test branch, then production, each applied by the human.
+
+Reason: the counts show what a migration will touch. A restore point is the only undo for dropped data. Dev first means a mistake costs fake data.
+
 ## Nullable or defaulted, when rows already exist
 
 A new column on a table with existing rows is nullable, or has a default. Never add a required column with no default to a populated table.
