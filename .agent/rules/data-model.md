@@ -60,6 +60,12 @@ Reason: an unset balance is missing data, not zero. Showing zero tells a member 
 
 Reason: these two fields decide access and money. A dispute or a mis-entry has to be traceable. Card text has no history; these do.
 
+**An expiry date is a calendar date, stored as midnight UTC of that date.** Read it back with UTC date parts, and compare it with today's date in Africa/Lagos. Never convert it through the server's own time zone. A member is current through the whole of their expiry date.
+
+Reason: the expiry column holds a timestamp, but the owner thinks in days. Storing a fixed midnight UTC and reading UTC parts means the date a person typed is the date they see, in any zone. This is the same trap as the attendance day: converting through the wrong zone shifts an evening value to the next or previous day.
+
+**Creating a member writes an audit row for the initial tier and the initial expiry,** with an empty old value, the new value, and the author, in the same transaction as the member row. Reason: it records who set the starting values and when, using the audit table that already exists. Creating a member never sets the opening balance flag and never writes a ledger entry.
+
 **Payment purpose is a fixed set.** A payment attempt carries a purpose of RENEWAL or BALANCE only, as an enum, not free text.
 
 Reason: free text invites a purpose like "upgrade" that implies the system acts on it. It does not. See payments.md.
