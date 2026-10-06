@@ -8,6 +8,8 @@ Spotter is a web app (a website saved to the phone home screen, not a Play Store
 
 Spotter answers along two separate paths. Shared facts, such as the timetable and the guest policy, come from typed cards found by meaning search. Private facts, such as attendance and balance, come from the member's own records fetched by exact member ID and never from a card. The two paths never mix.
 
+Members sign up themselves. When a member verifies their email, Spotter creates their record and membership ID. There are two plans. FREE is app use only: it never expires, it is not a gym membership and it gives no door access. PAID, bought one month at a time, adds training plans and trainer guidance. Paying in the app does not open the gym door: the desk still issues the access card.
+
 What makes it different from a general chatbot: a chatbot cannot tell a member "you trained on these nine days in July," because that lives in this gym's own records, not on the internet. For shared facts, a chatbot guesses an average gym answer, while Spotter shows this gym's own card, the date it was last confirmed, and says it does not know when no card covers the question.
 
 ## 2. Problem
@@ -46,15 +48,15 @@ Chidinma, 27, office worker, trains most weekday evenings. Phone: an inexpensive
 
 How often she opens the app is not yet known. The design hopes she checks in on most visits, since check-in is what makes her attendance answers true, and asks a real question a few times a month. That check-in habit is an assumption, not a measured fact. It is the single behaviour the whole attendance half of the product rests on. If members do not check in, Feature 2 stays empty and half the value never switches on. This is why check-in adoption is a stop-building signal in section 12 and a top risk in section 13, and why Feature 3 gives an instant, visible reward for checking in.
 
-How she gets in: the desk creates her member record and gives her a membership ID such as SPT-7K4Q. She creates an account with her name, email, password and that ID, confirms her email, and waits for the desk to link the account to her record. Until then she sees a waiting screen and nothing else.
+How she gets in: she signs up with her name, email, password and phone, and answers one question, "Already a member at the gym?". She confirms her email and Spotter creates her record and her membership ID at once. If she said Yes, she sees no balance until the owner has entered it, and the app hands her to the desk until then. If she said No, she starts on the free plan with nothing outstanding and sees that at once.
 
 ### The owner (record supplier, not a user)
 
-Approves cards, keeps the member list of tier, expiry and opening balance, enters cash and transfer payments, and reads a weekly review page. The owner never opens the member app.
+Approves cards, sets the monthly price, enters an existing member's opening balance and paid-until date, enters cash and transfer payments, and reads a weekly review page. The owner never opens the member app.
 
 ### Staff (record suppliers, not users)
 
-Draft and edit cards for the owner to approve, create member records, each with a system-generated membership ID, link new accounts to the right member, set the daily check-in code, and record a manual check-in when a member's phone is dead. **Staff never open the member app.** They appear to members only as the named person to contact on handoff.
+Draft and edit cards for the owner to approve, see which paid members still need an access card and mark one issued, set the daily check-in code, and record a manual check-in when a member's phone is dead. **Staff never open the member app.** They appear to members only as the named person to contact on handoff.
 
 ## 5. Scope
 
@@ -68,11 +70,19 @@ Draft and edit cards for the owner to approve, create member records, each with 
 
 ### Account screens (not features)
 
-Open sign-up with a desk check. Anyone can create an account, but it reaches nothing until staff link it to a member record. The screens are: landing, sign up, verify email, log in, forgot password, and a waiting screen for an account that is not yet linked. See FR-15 to FR-20.
+Open sign-up with an email check. Anyone can create an account. When the person verifies their email, the system creates their member record. There is no desk linking step. The screens are: landing, sign up, verify email, log in, and forgot password. See FR-16 to FR-20.
 
-### Tier changes and payment
+### Plans and payment
 
-Payment never changes a member's tier automatically in version one. A member can pay for a Premium upgrade, but the tier only changes when the owner sets it by hand in FR-8 after the payment clears. When a member pays for an upgrade, the app shows: "Your upgrade takes effect once the desk confirms." A payment carries a fixed purpose of RENEWAL or BALANCE only. It never carries "upgrade" as an instruction the system acts on, because the system does not change tier on its own.
+There are two plans. FREE never expires and sees the free cards: timetable, prices, rules, access hours, guest policy, and pause or cancellation. PAID adds training plans and trainer guidance. FREE means using the app only. It is not a gym membership and gives no door access. A FREE member cannot check in.
+
+A member's plan is not stored. It is worked out from one date, the day they are paid through. A member is PAID when that date is today or later in Africa/Lagos, and FREE otherwise. When paid time runs out the member is FREE again, with nothing written and no scheduled job.
+
+Paying makes a member PAID for one month. On the verified Flutterwave webhook, or on the owner's cash or transfer entry for membership, one transaction writes the ledger charge and payment, extends the paid-until date by one calendar month (clamped to the end of the month, counted from the later of today and the current paid-until, so paying early never loses days), and records the change in the audit. A change from the webhook is a system change with no author. A payment for a balance never extends paid time. A payment carries a fixed purpose of RENEWAL or BALANCE only.
+
+The monthly price is set by the owner in one place the app reads. It is never taken from card text. Pay stays closed until the owner sets it.
+
+While a payment is pending, a member who has had paid time before keeps paid access for twenty four hours. A member who has never had paid time gets no hold.
 
 ### Out of scope for version one
 
@@ -80,12 +90,13 @@ Payment never changes a member's tier automatically in version one. A member can
 - Reminders, nudges, follow-ups and any automated message. The only emails are email verification and password reset, sent when the person asks.
 - Reading old WhatsApp or chat history. Records are typed and approved, not scraped.
 - Refunds, waivers, discounts and cancellations inside the app. These are money rulings the app must never make.
-- Part-month price maths on a tier change. It is a separate calculation and can wait.
-- A stored history of old card text (prices, timetables). Only the current approved card is kept. Note: this does not apply to member tier and expiry, which are audited (see FR-8 and section 8.5).
+- Part-month price maths. A paid month is a whole calendar month.
+- Door access from payment. The desk issues the access card. The free plan is app use only.
+- A stored history of old card text (prices, timetables). Only the current approved card is kept. Note: this does not apply to paid-until changes, which are audited (see FR-8 and section 8.5).
 
 ### Deferred to version two, with the data version one must collect
 
-- Renewal reminders. Needs the expiry-date log and the change history that version one records.
+- Renewal reminders. Needs the paid-until log and the change history that version one records.
 - "You have not checked in for two weeks" nudges. Needs the check-in log version one records.
 - A gap-filling worklist for the owner. Needs the unanswered-question log version one records.
 - Payment retry prompts. Needs the payment-attempt log, including failures, that version one records.
@@ -97,7 +108,7 @@ Requirements are numbered FR-1 onward. Acceptance criteria are written so a test
 
 ### 6.1 Cross-cutting requirements
 
-**FR-1. Home screen is not an empty chat box.** The first screen shows a cached status strip: tier, expiry date, days trained this month, and balance. Below it are four tappable common questions. A text box is present but optional.
+**FR-1. Home screen is not an empty chat box.** The first screen shows a cached status strip: plan (Free or Paid), the paid-until date, days trained this month, and balance. A FREE member has no paid-until date, so the strip says the plan is Free and shows no date. Below it are four tappable common questions. A text box is present but optional.
 - Money wording on the strip: the balance line reads "Our records show [X] outstanding, as of [date]," or "Our records show nothing outstanding, as of [date]." It is never a bare number and never phrased as a ruling.
 - The whole strip carries an "as of [time]" stamp, so a value that is stale from cache reads as stale rather than as current truth.
 - Empty state: before the member's first check-in, "days trained this month" reads "Check-in just started. Your training days show here from your first check-in." **ASSUMPTION: this exact copy, because a bare zero on day one reads as broken.**
@@ -106,8 +117,8 @@ Requirements are numbered FR-1 onward. Acceptance criteria are written so a test
 **FR-2. Every answer shows its source.** A shared-card answer shows the card body underneath and its last-confirmed date. A private-record answer shows the underlying entries and an "as of" date.
 - Acceptance: no answer renders without either a card reference or a private-record reference plus a date. Fail if any answer shows text with no source.
 
-**FR-3. Tier gating.** A Basic member never receives Premium content. Premium cards are filtered out before retrieval, not after. (Retrieval means the search step that finds a matching card.)
-- Acceptance: a Basic member asking a question whose only match is a Premium card receives the no-record handoff, not the Premium card. Fail if any Premium card text reaches a Basic member.
+**FR-3. Plan gating.** A FREE member never receives PAID content (training plans and trainer guidance). PAID cards are filtered out before retrieval, not after. The member's plan is worked out at the moment of the question from the paid-until date. (Retrieval means the search step that finds a matching card.)
+- Acceptance: a FREE member asking a question whose only match is a PAID card receives the no-record handoff, not the PAID card. A member whose paid time ended yesterday is treated as FREE. Fail if any PAID card text reaches a FREE member.
 
 **FR-4. Private records are fetched by exact member ID.** Attendance and balance are read with a database filter on the logged-in member's ID. They are never searched by meaning and never embedded. (Embedding means turning text into numbers for meaning search.)
 - Acceptance: a code review confirms no private table is queried without a filter on the member link of the signed-in account. Fail if any private query omits the filter.
@@ -120,7 +131,7 @@ Medical and training-plan boundary. The app may repeat what an approved training
 
 - Acceptance (measured, not absolute): a fixed test set of at least forty never-answer questions, covering every listed category plus the two medical examples above, must produce zero leaks before launch. After launch, every miss caught by a wrong-answer report is logged and reviewed weekly. Fail the launch gate if any of the forty leak.
 
-**FR-6. Every question is logged.** The app logs question text, timestamp, member ID, tier, whether an answer was found, which card answered it, whether it was refused and why, whether it handed off, and whether the intent was resolved by the pre-router or the model (see section 7).
+**FR-6. Every question is logged.** The app logs question text, timestamp, member ID, plan, whether an answer was found, which card answered it, whether it was refused and why, whether it handed off, and whether the intent was resolved by the pre-router or the model (see section 7).
 - Acceptance: after any question, one QuestionLog row exists with these fields set. Fail if a question produces no log row.
 
 ### 6.2 Feature 1: Ask about the gym
@@ -132,11 +143,11 @@ Medical and training-plan boundary. The app may repeat what an approved training
 **Flow.**
 1. App sends the question to the ask endpoint.
 2. The server runs the pre-router (section 7.2). If it confidently labels the question ATTENDANCE or BALANCE, it routes to Feature 2. If it confidently matches a never-answer phrase, it routes to Feature 5. Otherwise it continues.
-3. For a gym question, the server embeds the question and runs a tier-filtered similarity search over approved card embeddings, taking the top card.
+3. For a gym question, the server embeds the question and runs a plan-filtered similarity search over approved card embeddings, taking the top card.
 4. If the top card's similarity is at or above the threshold, the model writes a one or two line answer grounded only in that card. If below, the server routes to Feature 5.
 5. The answer renders with the card body and last-confirmed date underneath.
 
-**Inputs.** Question text (max 300 characters), member session, member tier.
+**Inputs.** Question text (max 300 characters), member session, member plan.
 
 **Outputs.** A one or two line answer, the source card, the last-confirmed date.
 
@@ -147,7 +158,7 @@ Medical and training-plan boundary. The app may repeat what an approved training
 **Acceptance.**
 - A question matching an approved card returns an answer plus that card.
 - A question with no matching card returns the handoff, not a guess.
-- A Basic member never receives a Premium card (see FR-3).
+- A FREE member never receives a PAID card (see FR-3).
 
 ### 6.3 Feature 2: My records
 
@@ -157,12 +168,12 @@ Medical and training-plan boundary. The app may repeat what an approved training
 
 **Flow (attendance).**
 1. The server confirms the question is an attendance question.
-2. The server queries the Attendance table filtered by the signed-in account's linked member ID for the named month.
+2. The server queries the Attendance table filtered by the signed-in account's member ID for the named month.
 3. The server returns the count and the list of actual dates.
 
 **Flow (balance).**
 1. The server confirms the question is a balance question.
-2. If the member has no verified opening balance yet, the server returns the honest handoff: "We do not have your balance on record yet. Ask the desk." It never shows a zero in place of missing data.
+2. If the member answered Yes to "Already a member at the gym?" and the owner has not yet entered their opening balance, the server returns the honest handoff: "We do not have your balance on record yet. Ask the desk." It never shows a zero in place of missing data. A member who answered No starts with nothing outstanding, so their balance shows at once as a dated report.
 3. Otherwise the server reads the member's ledger entries filtered by member ID: the owner-entered opening charge and all recorded payments.
 4. The server computes outstanding as total charges minus total payments and returns the figure, the payment list (amount, date, method), and an "as of" date equal to the most recent ledger entry.
 
@@ -187,6 +198,8 @@ Medical and training-plan boundary. The app may repeat what an approved training
 
 **Trigger.** Member arrives and opens the check-in screen.
 
+**Only paid members can check in.** A FREE member sees "Check-in is for paid members." and no attendance row is written (D28).
+
 **Flow.**
 1. The member reads the four-digit code written on the whiteboard that morning and types it.
 2. The server compares it to today's CheckInCode.
@@ -207,20 +220,21 @@ Medical and training-plan boundary. The app may repeat what an approved training
 - A correct code writes exactly one Attendance row per member per calendar day. A second correct entry the same day writes no new row.
 - The updated count shows on the check-in screen without a page reload.
 - A wrong code writes no row.
+- A FREE member entering the code writes no row and sees the written explanation.
 
 ### 6.5 Feature 4: Pay
 
-**User story.** As a member, I pay my renewal or balance in the app so money reaches the gym and I get a receipt.
+**User story.** As a member, I pay for a month of membership, or a balance, in the app so money reaches the gym and I get a receipt.
 
 **Trigger.** Member taps Pay.
 
 **Flow.**
-1. The member selects a purpose: RENEWAL (amount from the price card) or BALANCE (the outstanding figure).
-2. The app calls the pay-initiate endpoint with the amount, the purpose, and a client idempotency key. (Idempotency key means a value that makes a repeated tap reuse the same payment instead of starting a second one.)
+1. The member selects a purpose: RENEWAL (one month of membership, at the monthly price the owner set) or BALANCE (the outstanding figure). Pay is closed until the owner has set the price.
+2. The app calls the pay-initiate endpoint with the purpose, a client idempotency key and, for a balance, the amount. For a renewal the server uses the monthly price and ignores any amount from the client. (Idempotency key means a value that makes a repeated tap reuse the same payment instead of starting a second one.)
 3. The server creates a PaymentAttempt in status INITIATED, calls the gateway, and returns the gateway checkout link.
 4. The member pays on the gateway page.
-5. The gateway calls the Spotter webhook. The server verifies the signature, then checks whether a ledger row already exists for this gateway reference. If one exists, it acknowledges and does nothing. If none exists, it marks the PaymentAttempt SUCCESS or FAILED and, on success, writes exactly one Payment ledger entry.
-6. The receipt appears once the webhook confirms.
+5. The gateway calls the Spotter webhook. The server verifies the signature, then in one transaction (with the member row locked) checks whether a ledger row or member change already exists for this attempt. If one exists, it acknowledges and does nothing. If the paid amount differs from the attempt's amount, it marks the attempt NEEDS_REVIEW and extends nothing. Otherwise it marks the attempt SUCCESS. For a renewal it writes a ledger charge and a ledger payment for the month, extends paid-until by one calendar month, and writes one audit row with no author and the attempt. For a balance it writes the ledger payment only.
+6. The receipt appears once the webhook confirms. After a first payment the app says the desk will issue the access card. Paying does not open the gym door.
 
 **Webhook is the only source of truth.** The app never marks a payment done because the phone showed a success screen.
 
@@ -228,20 +242,23 @@ Medical and training-plan boundary. The app may repeat what an approved training
 
 **Idempotency on repeat taps.** If the member taps Pay again while a PaymentAttempt for the same amount and purpose is still INITIATED or PENDING, the server returns the existing attempt, not a new one.
 
-**Network loss mid payment.** The PaymentAttempt stays PENDING. When the member returns, the app calls the verify endpoint with the attempt reference. Access holds for twenty four hours while the gateway confirms, so a pending payment never triggers expiry.
+**Network loss mid payment.** The PaymentAttempt stays PENDING. When the member returns, the app calls the verify endpoint with the attempt reference. A member who has had paid time before keeps paid access for twenty four hours while the gateway confirms, so a pending payment does not lapse their paid access. A member who has never had paid time gets no hold. The hold is worked out at access-check time and writes nothing.
 
-**Payment never changes tier.** A RENEWAL or BALANCE payment settles money only. Any tier change is a manual owner action after the payment clears (see section 5 and FR-8).
+**A membership payment extends paid time.** A RENEWAL payment makes the member PAID for one more calendar month, counted from the later of today and the current paid-until, in the same transaction as its ledger entries. A BALANCE payment settles money only. The owner's own cash or transfer entry for membership does the same as the webhook (FR-9).
 
-**Inputs.** Amount, purpose (RENEWAL or BALANCE), idempotency key, member session.
+**Inputs.** Purpose (RENEWAL or BALANCE), amount (balance only), idempotency key, member session.
 
 **Outputs.** Gateway checkout link, then a confirmed receipt.
 
-**Empty state.** Nothing to pay and not near expiry: the Pay button explains there is nothing outstanding.
+**Empty state.** Nothing outstanding: the Pay button offers one month of membership. No price set yet: "Payments are not open yet."
 
 **Error state.** Gateway unreachable at initiate: "Cannot start payment right now, try again shortly." No attempt is left half-written.
 
 **Acceptance.**
-- No Payment ledger row exists without a verified webhook.
+- No card Payment ledger row exists without a verified webhook.
+- A verified renewal webhook writes the charge, the payment, the one-month extension and the audit row together or not at all. A balance payment never changes paid time.
+- A webhook whose amount does not match extends nothing and marks the attempt for review.
+- Two payments arriving at once both add their month.
 - Two fast taps produce one PaymentAttempt, not two.
 - Two identical webhooks for one reference produce one ledger row, not two.
 - A member who loses network mid payment sees PENDING, keeps access for twenty four hours, and sees a receipt only after the webhook.
@@ -278,14 +295,17 @@ Medical and training-plan boundary. The app may repeat what an approved training
 **FR-7. Approve or reject drafted cards.** The owner sees each drafted card version and approves or rejects it. No card reaches a member until approved. Approval stamps the approver and a last-confirmed date. Approval and embedding are one unit: if the embedding step fails, approval does not complete (see section 9.5).
 - Acceptance: an unapproved card never appears in member retrieval. An APPROVED card always has a matching embedding. Fail if a draft is retrievable, or if an APPROVED card has no embedding.
 
-**FR-8. Maintain the member list.** Once a member exists, only the owner changes the member's tier, expiry date or opening balance, with a note on the opening balance. Staff cannot change them. Every change to tier or expiry writes a MemberChange audit row (old value, new value, field, author, timestamp). This is how a paid upgrade takes effect.
-- Acceptance: an opening balance change writes a ledger charge with the owner as author and a note. A tier or expiry change writes a MemberChange row. Fail if a balance can be typed directly onto a member, or if a tier or expiry change leaves no audit row.
+**FR-8. Maintain the member list.** Members make themselves by signing up. The owner opens a member to: confirm in person who the account belongs to, enter an existing member's opening balance and set their paid-until date, change the member's existing-member answer, add a charge at any time, and change the paid-until date. Staff can read the list but cannot change these. Every change to paid-until, the existing-member answer or the access card writes a MemberChange audit row (old value, new value, field, author, timestamp). The screen shows name, email, phone and possible duplicates by name and phone, and the owner must confirm identity before saving an opening balance.
+- Acceptance: an opening balance entry writes a ledger charge with the owner as author and a note, and sets the opening-balance flag in the same transaction. A paid-until, existing-member-answer or access-card change writes a MemberChange row. Fail if a balance can be typed directly onto a member, if the flag is set anywhere else except for a No answer at verification, or if a change leaves no audit row.
 
-**FR-9. Enter cash and transfer payments.** The owner records a cash or transfer payment with amount, date, method, and member. The typist is recorded. In-app card payments cannot be edited here. Same-day entry is required so the balance answer stays honest (see section 2).
-- Acceptance: a cash entry writes a ledger payment with the recorder's ID. A card payment row is read-only on this screen.
+**FR-9. Enter cash and transfer payments.** The owner records a cash or transfer payment with amount, date, method, member and purpose. The typist is recorded. A payment for membership uses the same mechanism as the webhook: in one transaction it writes the charge, the payment and the one-month extension, audited with the owner as author. A payment for a balance writes the payment only and does not extend paid time. In-app card payments cannot be edited here. Same-day entry is required so the balance answer stays honest (see section 2).
+- Acceptance: a cash entry writes a ledger payment with the recorder's ID. A membership entry also writes the charge, the extension and the audit row in one transaction. A card payment row is read-only on this screen.
 
 **FR-10. Weekly review page.** The owner reads wrong-answer reports and unanswered questions for the week.
 - Acceptance: the page lists every WrongAnswerReport and every QuestionLog with answerFound false for the last seven days.
+
+**FR-21. Set the monthly price.** The owner sets the price of one month in whole naira, in one setting the app reads. It is never taken from card text. Until it is set, Pay is closed.
+- Acceptance: with no price set, no payment attempt can be created. The amount of a renewal always equals the setting.
 
 ### 6.8 Staff screens (input, not features)
 
@@ -295,30 +315,30 @@ Medical and training-plan boundary. The app may repeat what an approved training
 **FR-12. Set the daily check-in code.** Staff set today's four-digit code once per day.
 - Acceptance: one active CheckInCode exists per day. A second set replaces the value and logs the change.
 
-**FR-13. Create a member and assign a membership ID.** Staff and the owner can both create a member record with name, initial tier, initial expiry and optional phone. Creating a member does not set the opening balance. The system generates the membership ID in the form SPT- plus four characters, unique and permanent. Nobody types the ID.
-- Acceptance: every new member gets a unique ID in the right format. A collision is retried, never saved twice. An ID cannot be edited or reused.
+**FR-13. (Removed.)** Staff no longer create members. A member is created by the system when a person verifies their email, with a generated membership ID in the form SPT- plus four characters, unique and permanent, retried on a collision.
+- Acceptance: every member created by verification gets a unique ID in the right format. A collision is retried, never saved twice. An ID cannot be edited or reused.
 
 **FR-14. Record a manual check-in.** Staff record a check-in for a member whose phone is dead. The entry is marked source MANUAL with the staff ID, one row per member per calendar day.
 - Acceptance: a manual check-in writes an Attendance row with source MANUAL and a staff author, and does not create a second row if one exists for that day.
 
-**FR-15. Link new accounts.** Staff see every account that has verified its email and is waiting for a link, with its name, email and claimed membership ID beside the name on the member record that ID points to. Staff tap Link or Reject. The app flags no-such-ID, name mismatch, already linked and duplicate claim, and never links on its own.
-- Acceptance: no account is ever linked without a staff tap. An already-linked record cannot be linked again. Each link records the staff member and the time.
+**FR-15. Access cards.** Staff and the owner see every member who is PAID today and has no access card recorded, and mark a card issued. They can un-mark one. Each change is audited with who and when. Paying never changes the card record. The desk issues the card.
+- Acceptance: the list shows exactly the members who are PAID today and have no card. Marking and un-marking each write an audit row.
 
 ### 6.9 Account screens (not features)
 
-**FR-16. Landing.** A person who is not signed in sees what Spotter is, a Create account button, a Log in button, and a line saying the membership ID comes from the front desk.
+**FR-16. Landing.** A person who is not signed in sees what Spotter is, a Create account button, and a Log in button.
 - Acceptance: the landing page loads with no data calls and no images beyond the logo.
 
-**FR-17. Sign up.** Name, email, password of at least 8 characters, and membership ID. The ID is accepted in any case, with or without the dash. The account is created unverified and unlinked. The response is the same whether or not the ID exists.
-- Acceptance: a sign-up with a real ID and one with a made-up ID return the same message. Neither reaches any member record.
+**FR-17. Sign up.** Name, email, password of at least 8 characters, phone, and one question: "Already a member at the gym?" The phone is stored as international digits only. The account is created unverified and has no member. Signing up with an unverified account's email replaces its details and sends a new link, within the limit in FR-18. Signing up with an active account's email changes nothing. The response is the same in every case. Each sign-up also deletes unverified accounts older than 2 months.
+- Acceptance: a new email, an unverified email and an active email return the same message. An active account is never changed by a sign-up.
 
-**FR-18. Verify email.** One email with a single-use link that expires after 24 hours. Using it moves the account to waiting for a link.
-- Acceptance: a used or expired link changes nothing. The app sends no email other than this one and the reset email.
+**FR-18. Verify email.** One email with a single-use link that expires after 24 hours. Using it, in one transaction, makes the account active, creates the member with its membership ID, and links them. Someone who answered No starts with nothing outstanding and their balance shows at once. A verification email is sent at most 3 times per email address per hour, with the same confirmation either way.
+- Acceptance: a used or expired link changes nothing. Using a link twice creates one member. The app sends no email other than this one and the reset email, and a fourth request in an hour sends nothing.
 
 **FR-19. Log in and password reset.** Log in with email and password. Five wrong tries in ten minutes pause that email for ten minutes. Forgot password sends one single-use link that expires after one hour, and the confirmation message is the same whether or not the account exists. A new password ends every other session.
 - Acceptance: an unknown email and a wrong password show the same error. A reset link works once.
 
-**FR-20. Waiting screen.** An account that is unverified, waiting for a link, or rejected sees one message saying the desk will connect it, and a way to sign out.
+**FR-20. Verify screen.** An account that has not verified its email sees one message asking it to verify, a resend button, and a way to sign out.
 - Acceptance: such an account reaches no card, no private record, no check-in and no payment.
 
 ## 7. AI and AI Related Tools and Solutions
@@ -348,14 +368,14 @@ Before question text is sent to the model, the server removes or masks obvious p
 1. The question passes the pre-router without a confident match.
 2. The model classifier labels it SHARED, ATTENDANCE, BALANCE, REFUSE, or OTHER.
 3. For SHARED, the server embeds the question with text-embedding-004.
-4. The server runs a tier-filtered similarity search over CardEmbedding.
+4. The server runs a plan-filtered similarity search over CardEmbedding.
 5. It takes the single closest card. At or above 0.72 similarity, it passes that one card to the model with the grounding prompt. Below 0.72, it hands off. **ASSUMPTION: 0.72 cosine similarity, tunable after testing.**
 6. The model answers from that card only. The app shows the card and its last-confirmed date.
 
 ### 7.5 Retrieval flow for a private-record question
 
 1. The pre-router or the classifier labels the question ATTENDANCE or BALANCE.
-2. **The server skips retrieval and the vector store entirely.** It queries the Attendance table or the ledger with a filter on the signed-in account's linked member ID.
+2. **The server skips retrieval and the vector store entirely.** It queries the Attendance table or the ledger with a filter on the signed-in account's member ID.
 3. The server fills a fixed answer template with the numbers from the database. The model never writes private-record numbers, so it cannot invent them.
 4. The app shows the underlying entries and an "as of" date.
 
@@ -368,7 +388,7 @@ You are Spotter, the answer desk for this one gym. You answer only from the
 CARD given to you in this request. You never use outside or general knowledge.
 
 You receive:
-- MEMBER_TIER: the member's tier.
+- MEMBER_TIER: the member's plan, FREE or PAID.
 - CARD: one gym card with title, body, category and last confirmed date. It may
   be empty.
 - QUESTION: the member's question.
@@ -436,22 +456,21 @@ Rules:
 ### 8.2 Request flow from browser to answer
 
 1. The browser sends the question with the session cookie.
-2. The server verifies the session, loads the account, and confirms it is linked. It reads the member ID and tier from the linked member. An unlinked account stops here.
+2. The server verifies the session, loads the account, and confirms it is active with a member. It reads the member ID from the account's member link and works out the member's plan from the paid-until date. An unverified account stops here.
 3. The pre-router runs on the server; the model classifier runs only if the router is unsure.
 4. The server branches to shared retrieval or a private query.
 5. The server returns the answer and source, and writes a QuestionLog row.
 
-### 8.3 Auth: open sign-up with a desk link
+### 8.3 Auth: self sign-up with automatic membership
 
-- The desk creates the member record first. The system generates a permanent membership ID such as SPT-7K4Q from 31 unambiguous characters.
-- Anyone can sign up with name, email, password and membership ID. The account starts unverified and unlinked.
-- The member verifies their email through a single-use link.
-- Staff link the account to the member record with one tap, after the app checks the claim. The typed ID never grants access on its own.
+- Anyone can sign up with name, email, password, phone and the answer to "Already a member at the gym?". The account starts unverified and has no member.
+- The person verifies their email through a single-use link. In one transaction the system makes the account active, creates the member with a generated permanent membership ID such as SPT-7K4Q from 31 unambiguous characters, and links them. There is no desk linking.
+- Signing up again with an unverified account's email replaces its details. An active account's email is never replaced. Unverified accounts older than 2 months are deleted when a new sign-up is written.
 - Log in is email plus password. Passwords are stored only as argon2 hashes.
-- Password reset is by a single-use emailed link.
+- Password reset is by a single-use emailed link. Verification and reset emails are each limited to 3 per address per hour.
 - The session is a signed httpOnly cookie carrying the account ID. The server reads the member link fresh on every request.
 - Emails go through Resend and are limited to verification and reset. There is no SMS.
-- Full rules live in rules/auth.md.
+- Full rules live in .agent/rules/auth.md.
 
 ### 8.4 Caching, offline and cold start
 
@@ -468,27 +487,28 @@ The schema lives only in .agent/rules/data-model-schema.md.
 
 | Model | Kind | Read rule |
 |---|---|---|
-| Account | Private | The signed-in account only; reaches a member only through the staff-set link |
+| Account | Private | The signed-in account only; its member link is set by the system at verification |
 | EmailToken | Private | Hashed, single use, by token only |
-| Member | Private | By the linked member ID only |
-| MemberChange | Audit | Admin only, tracks tier and expiry edits |
+| Member | Private | By the member ID on the signed-in, verified account only. Holds paid-until, not a stored plan |
+| MemberChange | Audit | Admin only, tracks paid-until, existing-member answer and access card changes, by a person or by a verified payment |
 | Attendance | Private | By member ID only, one per calendar day |
 | LedgerEntry | Private | By member ID only |
 | PaymentAttempt | Private | By member ID only |
 | QuestionLog | Private | By member ID only |
 | WrongAnswerReport | Private | By member ID only |
-| Card / CardVersion | Shared | Approved only, tier gated |
-| CardEmbedding | Shared | Approved only, tier gated, no private data |
+| Card / CardVersion | Shared | Approved only, plan gated |
+| CardEmbedding | Shared | Approved only, plan gated, no private data |
 | CheckInCode | Shared operational | Today's code |
 | Staff / Duty | Staff | Admin only, one active duty row |
+| AppSetting | Settings | Owner-edited, read by the app. Holds the monthly price |
 
 ### 8.7 Row-level access rules and where they are enforced
 
-- Every private read runs inside a server route or server action that first loads the signed-in account, confirms it is linked, and filters on its member link. There is no client-side database access.
-- Card reads for members always add `status = APPROVED` and `minTier` within the member's allowed tiers.
-- Admin routes check the Staff session and role before any write. Tier and expiry writes also insert a MemberChange row in the same transaction.
+- Every private read runs inside a server route or server action that first loads the signed-in account, confirms it is active with a member, and filters on its member link. There is no client-side database access.
+- Card reads for members always add `status = APPROVED` and `minTier` within the plans the member is allowed, worked out by the one plan function.
+- Admin routes check the Staff session and role before any write. Paid-until, existing-member answer and access card changes also insert a MemberChange row in the same transaction.
 - The webhook route verifies the signature and is idempotent on the gateway reference.
-- The vector search query always carries the tier filter and only ever selects from CardEmbedding.
+- The vector search query always carries the plan filter and only ever selects from CardEmbedding.
 - **ASSUMPTION: access is enforced in the application layer, not with Postgres row-level security, while a single app owns all database access; if direct database access is ever added, add row-level security then.**
 
 ## 9. Vector Database Architecture and Design
@@ -506,9 +526,9 @@ The vector store is **pgvector**, the vector extension inside the same PostgreSQ
 
 Cards are short. Each approved card is embedded whole as one chunk. **ASSUMPTION: if any single card exceeds about 400 words, split it into two cards at edit time rather than chunk it silently, because the member should always see the whole source card.**
 
-### 9.4 Tier filtering: before the search
+### 9.4 Plan filtering: before the search
 
-Filtering happens before the similarity search, as a SQL `WHERE` on `minTier`. A Basic member's query only compares against Basic-allowed cards. Pre-filtering is chosen over post-filtering because a Premium card must never be a candidate for a Basic member. With dozens of cards, the search is exact nearest-neighbour, so pre-filtering costs nothing in speed.
+Filtering happens before the similarity search, as a SQL `WHERE` on `minTier`. A FREE member's query only compares against FREE cards. Pre-filtering is chosen over post-filtering because a PAID card must never be a candidate for a FREE member. With dozens of cards, the search is exact nearest-neighbour, so pre-filtering costs nothing in speed.
 
 ### 9.5 Reindexing, made atomic
 
@@ -539,11 +559,11 @@ The vectors live in the `CardEmbedding` table. Prisma has no native vector type,
 | cardId | text | The logical card |
 | cardVersionId | text | Unique. The exact approved version embedded |
 | category | enum CardCategory | One of the eight card categories |
-| minTier | enum Tier | BASIC or PREMIUM. The tier filter key |
+| minTier | enum Tier | FREE or PAID. The plan filter key |
 | embedding | vector(768) | 768 numbers from text-embedding-004 |
 | createdAt | timestamp | When embedded |
 
-Metadata: `category` is one of the eight card categories. `minTier` is BASIC or PREMIUM.
+Metadata: `category` is one of the eight card categories. `minTier` is FREE or PAID. The free cards are timetable, prices, rules, access hours, guest policy, and pause or cancellation. Training plans and trainer guidance are PAID.
 
 ### 10.3 Index type and parameters
 
@@ -560,7 +580,7 @@ VALUES (
   'card_saturday',
   'cardver_saturday_v3',
   'TIMETABLE',
-  'BASIC',
+  'FREE',
   '[0.0123, -0.0456, 0.0789, ...]',  -- 768 numbers from text-embedding-004
   now()
 );
@@ -568,7 +588,7 @@ VALUES (
 
 ### 10.5 Example query with the tier filter applied
 
-For a Basic member, the allowed tiers array is `{BASIC}`. For a Premium member it is `{BASIC,PREMIUM}`.
+For a FREE member, the allowed tiers array is `{FREE}`. For a PAID member it is `{FREE,PAID}`.
 
 ```sql
 SELECT
@@ -591,7 +611,7 @@ The application then checks that `similarity >= 0.72`. If not, it hands off.
 
 ### 11.1 Who pays and how much
 
-- The member pays the gym the same subscription as before, now through the app.
+- The member pays the monthly price the owner sets in the app (open question 12), now through the app. Examples below that use 15,000 naira are illustrations only.
 - Who bears the gateway fee is an open decision, not settled here (see open question 3). The gym may absorb it or pass it to the member from the Flutterwave dashboard. The PRD does not promise a zero member-side fee, because that decision is not yet made.
 - The gym pays nothing for the software tools in version one, except the model's no-training configuration cost if the free tier cannot be used without training on inputs (see section 7 and open question 2).
 
@@ -608,7 +628,7 @@ On a 15,000 naira renewal by a Nigerian local card, the Flutterwave fee is 2 per
 | Vector store (pgvector) | Free, inside Neon | Same as the database |
 | AI model (no-training config) | Per-call, confirm before launch | Every model-answered question; the pre-router cuts this |
 | Payment gateway (Flutterwave) | Per live transaction | About 372 naira all-in on a 15,000 naira renewal |
-| Email (Resend) | Free plan: 3,000 emails a month, 100 a day, one verified domain | A day with more than 100 sign-ups and resets; onboard members in batches |
+| Email (Resend) | Free plan: 3,000 emails a month, 100 a day, one verified domain | A day with more than 100 verification and reset emails (each address is limited to 3 an hour) |
 
 Realistic monthly gateway cost. If most of four hundred members renew by card at 15,000 naira, that is up to six million naira processed a month. At about 2 percent all-in, roughly 120,000 naira a month leaves the gym in fees. This is the honest figure the gym weighs when deciding whether to absorb the fee or pass it on. It is not a rounding error, and it is why the fee-bearer is an open decision, not a footnote.
 
@@ -644,8 +664,12 @@ Six risks, ordered by severity, worst first.
 | 2 | Check-in non-adoption | If members do not check in, attendance stays empty and Feature 2 plus half the value never switch on. This is the product's main behavioural bet | Check-in adoption below target in the weekly numbers | Feature 3 gives an instant training-count reward; the redefined stop-building signal catches it early; version two adds nudges built on this data |
 | 3 | Member question text leaks to a third party | Sending names and personal detail to a training-on model breaks the privacy spine | Any question text found in a provider's training logs; a privacy review | No-training model configuration (7.1); server-side pre-router keeps common cases away from the provider (7.2); name-stripping before any model call (7.3) |
 | 4 | Half-finished or double-fired payment | A dropped connection or a repeat webhook can leave money unconfirmed or double-counted | PaymentAttempt rows stuck in PENDING; duplicate ledger attempts | Webhook is the only source of truth; idempotent on the gateway reference; idempotency key on repeat taps; PENDING state; 24-hour access hold |
-| 5 | An account is linked to the wrong member | One member's balance and attendance shown to another person | Wrong-answer or complaint reports from a newly linked account | The typed ID never grants access; the app flags mismatches and never auto-links; one account per member; every link records the staff member who made it (FR-15) |
-| 6 | Wrong starting data at manual entry | A mis-typed tier, expiry or opening balance gives confident wrong answers from day one | Wrong-answer reports clustered on newly entered members | Staged, active-members-first entry; no balance shown until verified; tier and expiry changes audited in MemberChange; opening-balance entries record the author |
+| 5 | The owner matches an existing member to the wrong account | One member's balance, plan or attendance shown to another person, now that the desk no longer links accounts | Wrong-answer or complaint reports from a newly set-up member | The owner's screen shows name, email, phone and possible duplicates, and requires an in-person identity confirmation before an opening balance is saved; one account per member; every entry audited with its author (FR-8) |
+| 6 | Wrong starting data, including a wrong No | A mistyped opening balance or paid-until, or an existing member who answers No and sees nothing outstanding, gives confident wrong answers from day one | Wrong-answer reports clustered on newly signed-up members | A Yes answer shows no balance until the owner enters it; the owner sees every member's answer and can change it and add charges at any time, audited; no balance shown until set; paid-until and answer changes audited |
+| 7 | The webhook writes money and paid time | A forged, replayed, mismatched or half-written webhook could give free months or double an extension | Attempts in NEEDS_REVIEW; paid-until changes with no matching payment | Signature checked first; idempotent on the attempt; amount must match; one transaction with the member row locked; one audit row per attempt; the arithmetic exists once (FR-9, section 6.5) |
+| 8 | Signing up over an unverified account | Someone who knows an email can replace an unverified sign-up, then the inbox owner may click a link that activates an account with a password they did not choose | Reports of an account the person did not set up | The window is only while the account is unverified; an active account is never replaced; limit of 3 emails an hour; recorded as a known risk (D40) |
+| 9 | Verification emails used up | Free email plan allows 100 a day, so one person could block real sign-ups | Verification emails not arriving | Limit of 3 verification emails per address per hour, counted whether or not an account exists |
+| 10 | Starting a payment to get paid cards | A free member could start payments to get the 24-hour hold | PAID cards served to members with no paid time | The hold applies only to members who have had paid time before |
 
 ## 14. Open Questions
 
@@ -655,13 +679,16 @@ Each question needs information only the founder has. Each lists why it blocks w
 2. **Is a no-training configuration of Google's models available on the free tier, and what is the per-call price if not?** Blocks the cost claim and the privacy claim in section 7. Assumed: a no-training configuration is used even if it is a paid data-processing tier, and question text is never sent to a tier that trains on inputs. The real constraint is the per-minute rate cap and the training-on-inputs behaviour, not the daily total. Confirm both before launch.
 3. **Should the gym absorb or pass on the roughly 372 naira gateway fee?** Blocks the final member-facing renewal price and section 11.1. Assumed open, not settled. The realistic monthly figure (around 120,000 naira at full card uptake) is shown so the founder can decide.
 4. **How is the on-duty staff member chosen through the day?** Blocks the named handoff. Assumed: staff set the single active Duty row from the staff screen; a partial unique index enforces one active row.
-5. **Does an owner member list already exist to import, or is every member typed in by hand?** Blocks setup time and the wrong-starting-data risk. Assumed: manual staged entry, active members first. No balance is shown for any member until their opening balance is entered and verified; until then the balance path returns the honest handoff, not a zero.
+5. **Does an owner member list already exist to import, or does every existing member sign up themselves?** Blocks setup time and the wrong-starting-data risk. Decided: existing members sign up and say Yes. No balance is shown until the owner enters their opening balance and confirms who they are; until then the balance path returns the honest handoff, not a zero.
 6. **What time zone and currency rounding apply?** Blocks month boundaries and figure display. Assumed: Africa/Lagos time and whole naira with no kobo. Attendance uniqueness is per calendar day in Africa/Lagos.
 7. **How long are question logs and private records kept?** Blocks a retention rule before real member data goes in. Assumed: kept through version one for the version-two build, with a retention decision before wider rollout.
-8. **What can an account see before it is linked?** Blocks the waiting screen. Assumed: nothing but the waiting message and sign out. The alternative is letting it see the Basic shared cards.
+8. **What can an unverified account see?** Decided: nothing but the verify screen, a resend button and sign out.
 9. **How do staff and the owner sign in?** Blocks the admin side. Not assumed; the schema leaves staff sign-in fields out until this is decided.
 10. **Which domain sends the account emails?** Blocks launch, because Resend's free plan needs one verified domain.
 11. **Are the link lifetimes right?** Assumed: 24 hours for email verification, one hour for password reset.
+12. **What is the monthly price?** Open (D27). Blocks Pay. The owner sets it in the app. No default is assumed.
+13. **What does a webhook amount mismatch write to the ledger?** Open part of D33. Decided so far: no paid time is extended and the attempt is flagged for the owner. Not decided: whether the payment itself is recorded.
+14. **Is the unverified account cleanup 2 months or 7 days?** The approval said both; the later line, 2 months, was applied (D37). Confirm.
 
 ## All assumptions in this document
 
@@ -679,9 +706,13 @@ Each question needs information only the founder has. Each lists why it blocks w
 12. Africa/Lagos time zone, whole-naira money, and attendance uniqueness per calendar day.
 13. Question logs and private records are kept through version one, with a retention decision before wider rollout.
 14. Check-in adoption is unproven and is the product's main behavioural bet, not a stated fact.
-15. Payment never changes tier; tier changes are a manual owner action after payment clears.
+15. A membership payment extends paid time by one calendar month on a verified webhook or the owner's own entry, never otherwise. The plan is worked out from the paid-until date, not stored.
 16. The Neon free database sleeps when idle, so the first request after a quiet spell has a cold-start delay.
-17. An account sees only the waiting screen until staff link it.
+17. An unverified account sees only the verify screen. A verified account has a member.
 18. Email verification links last 24 hours and reset links last one hour.
 19. Five wrong passwords in ten minutes pause that email for ten minutes.
-20. Members are onboarded in batches so sign-up emails stay under Resend's free daily limit.
+20. Verification and reset emails are each limited to 3 per address per hour, to stay under Resend's free daily limit.
+21. FREE means app use only: no gym membership and no door access. FREE members cannot check in (D26, D28).
+22. A paid month is a whole calendar month, clamped to the end of the month (D34).
+23. The 24-hour hold applies only to members who have had paid time before (D29).
+24. Unverified accounts older than 2 months are deleted when a new sign-up is written (D37).
