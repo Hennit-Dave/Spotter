@@ -29,6 +29,7 @@ The PRD's own open questions (section 14) stay in the PRD and are not repeated h
 - PRD FR-1 and client-constraints.md say home shows the status strip, four common questions, and an optional text box.
 - The foundation brief says home is static, minimal, and has no data.
 - Recommendation: a static layout with the three regions in place and written placeholder copy. No figures, no zeros, no currency symbols.
+- Update 2026-10-06 (D41): the status strip labels become Plan, Paid until, Days trained, Balance, because tier and expiry are replaced by FREE or PAID and a paid-until date.
 - Status: DECIDED 2026-09-30. Static shell, top to bottom: the name Spotter; a status strip with the labels Tier, Expires, Days trained, Balance and no values; the four questions from D4 as buttons that do nothing yet; an optional text input, 300 characters max, that does nothing yet. Height 100dvh with a 100vh fallback. No page scroll, no hidden overflow, no images, icons or decoration. Tap targets use size-tap.
 
 ### D4. The four common questions
@@ -162,6 +163,71 @@ The PRD's own open questions (section 14) stay in the PRD and are not repeated h
 - auth.md: staff and owner screens use their own sign-in and session, with a role check before any read or write. How staff sign in is not decided. The Staff model has no sign-in fields.
 - Blocks: every admin screen, including desk linking of new accounts, and the single schema migration. The migration is not proposed until this is settled.
 - Status: DECIDED 2026-10-05. Staff and owner sign in with email and password, the same way as members. There is no open sign-up for staff: the owner creates staff accounts. Each has a role, OWNER or STAFF. They use the same argon2 hashing and the same single-use reset link. The admin session is its own signed httpOnly cookie, separate from the member session, and the role is checked before every admin read or write. Still to apply: .agent/rules/auth.md and the Staff model in data-model-schema.md.
+
+---
+
+## F. Free and paid plans (decided 2026-10-06)
+
+Members now sign up themselves. The system creates the member when the email is verified. Two plans, FREE and PAID. Paying makes a member PAID for one month. The plan and the change plan are in the conversation that produced these entries. Rules files and the PRD are updated to match, one commit per file.
+
+### D26. What FREE means
+- Status: DECIDED 2026-10-06. FREE means using the app only. It is not a gym membership and gives no door access. FREE never expires and sees the free shared cards.
+
+### D27. The monthly price
+- The owner sets it in one place the app reads, an AppSetting row named monthly_price_naira, in whole naira. It is never taken from card text, and never from the prices card.
+- Blocks: Feature 4 (Pay), the owner price screen, and the renewal examples in the PRD, which are illustrations only.
+- Status: OPEN. Pay stays closed until the owner sets a price. No default is invented.
+
+### D28. Check-in for FREE members
+- Status: DECIDED 2026-10-06. FREE members cannot check in. Only a PAID member (paid-until is today or later, Lagos date) can enter the daily code.
+
+### D29. Scope of the 24-hour hold
+- Status: DECIDED 2026-10-06. The 24-hour hold for a pending payment applies only to members who have had paid time before (paid-until is not empty). A member who has never paid gets no hold. The hold is worked out at access-check time and writes nothing.
+
+### D30. Ledger entries for a membership payment
+- Status: DECIDED 2026-10-06. A membership payment writes a CHARGE and a PAYMENT as a pair, so the balance nets to zero. Without the charge, a FREE member who pays would show a credit.
+
+### D31. Cash and transfer payments for membership
+- Status: DECIDED 2026-10-06. They use the same mechanism as the webhook. The owner's entry writes the charge, the payment and the one-month extension in one transaction, audited with the owner as author. Balance-only cash payments do not extend paid time.
+
+### D32. PAUSE_CANCELLATION cards
+- Status: DECIDED 2026-10-06. They are FREE cards. The FREE cards are timetable, prices, rules, access hours, guest policy and pause or cancellation. PAID adds training plans and trainer guidance.
+
+### D33. A webhook whose amount does not match
+- Status: DECIDED 2026-10-06. A signature-verified webhook whose paid amount differs from the payment attempt's amount extends no paid time and is flagged for the owner.
+- Not decided: whether the payment itself is written to the ledger in that case. Ask before building the webhook.
+
+### D34. What a month is
+- Status: DECIDED 2026-10-06. A calendar month, clamped to the end of the month. New paid-until is one calendar month after the later of today (Lagos) and the current paid-until, so paying early never loses days.
+
+### D35. Existing-member answer and opening charges
+- Status: DECIDED 2026-10-06. The owner can change a member's claimsExistingMember answer, and add an opening charge, at any time. Both are audited with the owner as author.
+
+### D36. The access card record
+- Status: DECIDED 2026-10-06. Staff and owner can mark an access card issued, and can un-mark it. Each change is audited with who and when.
+
+### D37. Cleaning up unverified accounts
+- Status: DECIDED 2026-10-06. Unverified accounts older than 2 months are deleted whenever a new sign-up is written. There is no scheduled job. This is the second approved exception to the "no deletion job" rule in privacy.md, after FailedAttempt.
+- Note: the approval message first said 7 days and a later line in the same approval said 2 months. The agent applied the later one, 2 months. Confirm if 7 days was meant.
+
+### D38. Phone at sign-up
+- Status: DECIDED 2026-10-06. Phone is required at sign-up and is normalised to international digits, as in data-model.md.
+
+### D39. Verification email limit
+- Status: DECIDED 2026-10-06. At most 3 verification emails per email address per hour, counted in FailedAttempt with a new kind, with the same confirmation either way. Needs a schema change: a new AttemptKind value.
+
+### D40. Signing up again with an unverified email
+- Status: DECIDED 2026-10-06. Sign-up with an email that belongs to an UNVERIFIED account replaces that account's name, phone, answer and password and sends a new verification link, within the 3 per hour limit. The response is the same as any other sign-up. An ACTIVE account's email is never replaced.
+- Known risk, recorded in the PRD: someone who knows a person's email can sign up with it first or replace an unverified sign-up, then the real owner of the inbox may click a link that activates an account with someone else's password. The window is only while the account is unverified.
+
+### D41. The plan model
+- Status: DECIDED 2026-10-06. The approved design, as one entry:
+  - paid-until is one nullable date on Member. The tier is worked out from it, in one function. A source check ensures only that function reads it.
+  - Two migrations, A then B. A is additive plus renames. B drops the old columns after the code stops reading them. The human takes a Neon restore point before B. Read-only count queries are given before each.
+  - FR-13 (staff create-member form) is removed. The member list and the duplicate finder stay. The creationKey column is dropped in B.
+  - A new folder, src/server/plan/, holds the tier function and the paid-time arithmetic.
+  - The gate changes in testing.md are approved.
+  - "Payment never changes tier" is reversed: on a verified webhook, or an owner's cash or transfer entry for membership, paid time is extended.
 
 ---
 
