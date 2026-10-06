@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { getTestDb } from '../test-db';
-import { ATTEMPT_LIMIT, ATTEMPT_WINDOW_MS, isPaused, recordFailure, takeAttempt } from './throttle';
+import { ATTEMPT_LIMIT, ATTEMPT_RETENTION_MS, ATTEMPT_WINDOW_MS, isPaused, recordFailure, takeAttempt } from './throttle';
 import {
   RESET_TOKEN_LIFETIME_MS,
   consumeToken,
@@ -158,6 +158,31 @@ describe('the password reset email limit (needs the PASSWORD_RESET_EMAIL migrati
     const key = `${run}-noaccount@test.invalid`;
     for (let i = 0; i < 3; i++) expect(await takeAttempt(db, 'PASSWORD_RESET_EMAIL', key)).toBe(true);
     expect(await takeAttempt(db, 'PASSWORD_RESET_EMAIL', key)).toBe(false);
+  });
+});
+
+describe('the FailedAttempt cleanup', () => {
+  it('deletes rows older than 24 hours when a new row is written, and keeps newer ones', async () => {
+    const stale = `${run}-stale@test.invalid`;
+    const fresh = `${run}-fresh@test.invalid`;
+    const now = Date.now();
+    await db.failedAttempt.createMany({
+      data: [
+        { kind: 'ADMIN_LOGIN', key: stale, createdAt: new Date(now - ATTEMPT_RETENTION_MS - 60_000) },
+        { kind: 'PASSWORD_RESET_EMAIL', key: stale, createdAt: new Date(now - ATTEMPT_RETENTION_MS * 2) },
+        { kind: 'ADMIN_LOGIN', key: fresh, createdAt: new Date(now - ATTEMPT_RETENTION_MS + 600_000) },
+      ],
+    });
+    await recordFailure(db, 'ADMIN_LOGIN', `${run}-trigger@test.invalid`);
+    expect(await db.failedAttempt.count({ where: { key: stale } })).toBe(0);
+    expect(await db.failedAttempt.count({ where: { key: fresh } })).toBe(1);
+    expect(await db.failedAttempt.count({ where: { key: `${run}-trigger@test.invalid` } })).toBe(1);
+  });
+
+  it('touches no other table', async () => {
+    const staff = await makeStaff('cleanup');
+    await recordFailure(db, 'ADMIN_LOGIN', `${run}-other@test.invalid`);
+    expect(await db.staff.findUnique({ where: { id: staff.id } })).not.toBeNull();
   });
 });
 
