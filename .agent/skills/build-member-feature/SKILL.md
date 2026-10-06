@@ -27,11 +27,11 @@ Check: you have written down one of the three. If the feature seems to be two, s
 
 ## Step 3: Build the server route
 
-Put the logic in a server route handler or a server action. Verify the session, load the account, and confirm it is linked. Read the member ID from the account's member link, never from anything the client sends. An unlinked account gets the waiting screen and nothing else.
+Put the logic in a server route handler or a server action. Verify the session, load the account, and confirm it is ACTIVE with a member. Read the member ID from the account's member link, never from anything the client sends. An unverified account gets the verify screen and nothing else. For anything that depends on the plan, call the one plan function in src/server/plan/. Never read paid-until yourself.
 
 For a private record path, call the shared member query helper. Do not write the query inline.
 
-Check: the route file contains no database call that runs before the session check, no private query written inline, and an unlinked account cannot get past the link check.
+Check: the route file contains no database call that runs before the session check, no private query written inline, and an unverified account cannot get past the check, and the plan comes only from the plan function.
 
 ## Step 4: Write the empty state
 
