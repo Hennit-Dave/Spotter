@@ -194,8 +194,7 @@ Members now sign up themselves. The system creates the member when the email is 
 - Status: DECIDED 2026-10-06. They are FREE cards. The FREE cards are timetable, prices, rules, access hours, guest policy and pause or cancellation. PAID adds training plans and trainer guidance.
 
 ### D33. A webhook whose amount does not match
-- Status: DECIDED 2026-10-06. A signature-verified webhook whose paid amount differs from the payment attempt's amount extends no paid time and is flagged for the owner.
-- Not decided: whether the payment itself is written to the ledger in that case. Ask before building the webhook.
+- Status: DECIDED 2026-10-06. A signature-verified webhook whose paid amount differs from the payment attempt's amount writes the payment to the ledger, with no charge and no paid-time extension, and marks the attempt NEEDS_REVIEW for the owner. The money did arrive, so the ledger records it. The owner decides what to do next. Nothing else is written.
 
 ### D34. What a month is
 - Status: DECIDED 2026-10-06. A calendar month, clamped to the end of the month. New paid-until is one calendar month after the later of today (Lagos) and the current paid-until, so paying early never loses days.
@@ -207,8 +206,7 @@ Members now sign up themselves. The system creates the member when the email is 
 - Status: DECIDED 2026-10-06. Staff and owner can mark an access card issued, and can un-mark it. Each change is audited with who and when.
 
 ### D37. Cleaning up unverified accounts
-- Status: DECIDED 2026-10-06. Unverified accounts older than 2 months are deleted whenever a new sign-up is written. There is no scheduled job. This is the second approved exception to the "no deletion job" rule in privacy.md, after FailedAttempt.
-- Note: the approval message first said 7 days and a later line in the same approval said 2 months. The agent applied the later one, 2 months. Confirm if 7 days was meant.
+- Status: DECIDED 2026-10-06, confirmed by the human the same day. Unverified accounts older than 2 months are deleted whenever a new sign-up is written. There is no scheduled job. This is the second approved exception to the "no deletion job" rule in privacy.md.
 
 ### D38. Phone at sign-up
 - Status: DECIDED 2026-10-06. Phone is required at sign-up and is normalised to international digits, as in data-model.md.
@@ -216,9 +214,11 @@ Members now sign up themselves. The system creates the member when the email is 
 ### D39. Verification email limit
 - Status: DECIDED 2026-10-06. At most 3 verification emails per email address per hour, counted in FailedAttempt with a new kind, with the same confirmation either way. Needs a schema change: a new AttemptKind value.
 
-### D40. Signing up again with an unverified email
-- Status: DECIDED 2026-10-06. Sign-up with an email that belongs to an UNVERIFIED account replaces that account's name, phone, answer and password and sends a new verification link, within the 3 per hour limit. The response is the same as any other sign-up. An ACTIVE account's email is never replaced.
-- Known risk, recorded in the PRD: someone who knows a person's email can sign up with it first or replace an unverified sign-up, then the real owner of the inbox may click a link that activates an account with someone else's password. The window is only while the account is unverified.
+### D40. The password is set at verification
+- Status: DECIDED 2026-10-06, replacing the first version of this decision. Sign-up collects name, email, phone and the "Already a member at the gym?" answer only. It collects no password. The verification link opens a set-password page that also shows the details for the person to check or correct. Using the link sets the password, makes the account active and creates the member, in one transaction. Account.passwordHash is empty until then.
+- Signing up again with an UNVERIFIED account's email updates its name, phone and answer and sends a fresh link, within the 3 per hour limit. The response is the same as any other sign-up. An ACTIVE account is never touched.
+- An account's first password can only be set by using its verification link. Nobody can set or replace a password by signing up, so signing up over someone else's unverified email cannot take the account over.
+- Needs a schema change: Account.passwordHash becomes nullable (migration A).
 
 ### D41. The plan model
 - Status: DECIDED 2026-10-06. The approved design, as one entry:
