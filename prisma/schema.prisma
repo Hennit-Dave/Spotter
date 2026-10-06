@@ -173,6 +173,7 @@ model Member {
   tier              Tier     @default(BASIC)
   expiryDate        DateTime
   openingBalanceSet Boolean  @default(false)
+  creationKey         String?       @unique // random key from the add member form; a repeated submit with the same key creates nothing
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
