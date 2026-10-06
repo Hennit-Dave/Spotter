@@ -12,12 +12,14 @@ export function PendingButton({
   value,
   secondary = false,
   skipValidation = false,
+  pendingLabel = 'Saving',
 }: {
   children: ReactNode;
   name?: string;
   value?: string;
   secondary?: boolean;
   skipValidation?: boolean;
+  pendingLabel?: string;
 }) {
   const { pending } = useFormStatus();
   return (
@@ -29,7 +31,7 @@ export function PendingButton({
       formNoValidate={skipValidation}
       className={`${styles.button} ${secondary ? styles.buttonSecondary : ''}`}
     >
-      {pending ? 'Saving' : children}
+      {pending ? pendingLabel : children}
     </button>
   );
 }
