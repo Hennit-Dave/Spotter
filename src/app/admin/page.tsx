@@ -1,4 +1,4 @@
-import { AuthCard, Form, SubmitButton, Text } from '@/components/admin/AuthCard';
+import { AuthCard, Form, NavLink, SubmitButton, Text } from '@/components/admin/AuthCard';
 import { requireAdmin } from '@/server/auth/admin-session';
 import { signOut } from './actions';
 
@@ -9,7 +9,7 @@ export default async function AdminHomePage() {
       <Text>
         Signed in as {staff.name}, {staff.role === 'OWNER' ? 'owner' : 'staff'}.
       </Text>
-      <Text>No desk screens are built yet.</Text>
+      <NavLink href="/admin/members">Members</NavLink>
       <Form action={signOut}>
         <SubmitButton>Sign out</SubmitButton>
       </Form>
