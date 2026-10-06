@@ -2,6 +2,8 @@ import type { AttemptKind } from '../../../generated/prisma/enums';
 
 export const ATTEMPT_LIMIT = 5;
 export const ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
+// Rows older than this are deleted whenever a new one is written (privacy.md).
+export const ATTEMPT_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 export interface AttemptRule {
   limit: number;
@@ -25,6 +27,7 @@ export interface AttemptStore {
       where: { kind: AttemptKind; key: string; createdAt: { gt: Date } };
     }): Promise<number>;
     create(args: { data: { kind: AttemptKind; key: string } }): Promise<unknown>;
+    deleteMany(args: { where: { createdAt: { lt: Date } } }): Promise<unknown>;
   };
 }
 
@@ -44,12 +47,23 @@ export async function isPaused(
   return used >= limit;
 }
 
+// Writes one row. In the same call it deletes rows older than the retention period, so the
+// table cannot grow without limit and no scheduled job is needed. The delete filters on age
+// only, in this table only. If it fails, the row above is still recorded.
 export async function recordFailure(
   store: AttemptStore,
   kind: AttemptKind,
   key: string,
+  now: Date = new Date(),
 ): Promise<void> {
   await store.failedAttempt.create({ data: { kind, key } });
+  try {
+    await store.failedAttempt.deleteMany({
+      where: { createdAt: { lt: new Date(now.getTime() - ATTEMPT_RETENTION_MS) } },
+    });
+  } catch {
+    console.error('FailedAttempt cleanup failed');
+  }
 }
 
 // For limits on requests rather than wrong tries. Returns false, writing nothing, when the

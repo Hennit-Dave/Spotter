@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ATTEMPT_LIMIT,
+  ATTEMPT_RETENTION_MS,
   ATTEMPT_RULES,
   ATTEMPT_WINDOW_MS,
   isPaused,
@@ -24,6 +25,12 @@ function fakeStore(rows: Row[]): AttemptStore {
       },
       async create({ data }) {
         rows.push({ ...data, createdAt: new Date() });
+        return null;
+      },
+      async deleteMany({ where }) {
+        for (let i = rows.length - 1; i >= 0; i--) {
+          if (rows[i].createdAt < where.createdAt.lt) rows.splice(i, 1);
+        }
         return null;
       },
     },
@@ -126,5 +133,28 @@ describe('the password reset email limit', () => {
     const store = fakeStore([]);
     for (let i = 0; i < 3; i++) await takeAttempt(store, 'PASSWORD_RESET_EMAIL', 'a@b.co');
     expect(await takeAttempt(store, 'PASSWORD_RESET_EMAIL', 'other@b.co')).toBe(true);
+  });
+});
+
+describe('the FailedAttempt cleanup', () => {
+  it('deletes rows older than 24 hours when a row is written, and keeps newer ones', async () => {
+    const ago = (ms: number) => new Date(Date.now() - ms);
+    const rows: Row[] = [
+      { kind: 'ADMIN_LOGIN', key: 'old@b.co', createdAt: ago(ATTEMPT_RETENTION_MS + 1000) },
+      { kind: 'PASSWORD_RESET_EMAIL', key: 'old2@b.co', createdAt: ago(ATTEMPT_RETENTION_MS * 3) },
+      { kind: 'ADMIN_LOGIN', key: 'recent@b.co', createdAt: ago(ATTEMPT_RETENTION_MS - 60_000) },
+    ];
+    await recordFailure(fakeStore(rows), 'ADMIN_LOGIN', 'new@b.co');
+    expect(rows.map((r) => r.key).sort()).toEqual(['new@b.co', 'recent@b.co']);
+  });
+
+  it('still records the failure when the cleanup fails', async () => {
+    const rows: Row[] = [];
+    const store = fakeStore(rows);
+    store.failedAttempt.deleteMany = async () => {
+      throw new Error('boom');
+    };
+    await expect(recordFailure(store, 'ADMIN_LOGIN', 'a@b.co')).resolves.toBeUndefined();
+    expect(rows).toHaveLength(1);
   });
 });
