@@ -36,6 +36,10 @@ export function Landing() {
       <footer className={styles.footer}>
         <p className={styles.footerBrand}>Spotter</p>
         <p>Your gym&apos;s answer desk.</p>
+        <nav className={styles.legalLinks} aria-label="Legal">
+          <Link href="/privacy-policy" prefetch={false}>Privacy Policy</Link>
+          <Link href="/terms-of-service" prefetch={false}>Terms of Service</Link>
+        </nav>
       </footer>
     </div>
   );

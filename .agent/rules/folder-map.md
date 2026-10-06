@@ -14,6 +14,7 @@ Create a folder only when the feature that needs it begins. Do not create the wh
 src/
   app/
     layout.tsx, manifest.ts, page.tsx
+    privacy-policy/  terms-of-service/  public legal pages approved on 2026-10-06
     (account)/        member account screens, no member session needed
       sign-up/  verify-email/  log-in/  forgot-password/  reset-password/
     (member)/         verified members only; session and member check in the layout

@@ -71,3 +71,17 @@
   outline: 2px solid var(--color-secondary);
   outline-offset: 4px;
 }
+
+.legalLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+.legalLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-tap);
+}

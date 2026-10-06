@@ -28,6 +28,12 @@ export function LegalPage({ document }: { document: LegalDocument }) {
           </section>
         ))}
       </main>
+      <footer>
+        <nav className={styles.legalLinks} aria-label="Legal">
+          <Link href="/privacy-policy" prefetch={false}>Privacy Policy</Link>
+          <Link href="/terms-of-service" prefetch={false}>Terms of Service</Link>
+        </nav>
+      </footer>
     </div>
   );
 }
