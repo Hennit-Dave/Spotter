@@ -12,11 +12,15 @@ This file owns the rule. Other files point here. Do not restate these rules else
 
 **A signed-in member may read only their own records.** The filter is the member link on their account, loaded on the server from the verified session. Never take a member ID from a URL parameter, a request body, a header, the membership ID typed at sign-up, or any client-supplied field.
 
-An account with no member link reads no private record and no card, however long it has existed.
+An account with no member link reads no private record and no card, however long it has existed. An UNVERIFIED account never has one.
 
 **A staff or owner session may read across members, after a role check.** The member list, the weekly review, and cash entry all need this. These reads run only in admin routes, only after the staff role is verified, and never through the member query helper.
 
 No member session ever reaches an admin route, and no admin route is reachable without a staff role check.
+
+**Matching a person to a gym record is a desk decision, now made by the owner.** A person who signs up as already a member sees no balance until the owner enters their opening balance. The owner's screen shows the person's name, email and phone, and the owner must confirm in person that this account is that member before the entry is saved. The screen also shows possible duplicates by name and phone. Entering a balance on the wrong member's row shows one person's money to another.
+
+Reason: the desk used to confirm each account against a membership ID. With self sign-up that check moves here, so it has to be a deliberate step, not a side effect of typing a number.
 
 Reason: the member-scoped rule alone would make the owner screens impossible to build, and an agent that hits that wall will either break the rule or build the screen wrong. Naming both cases removes the guess.
 
@@ -77,15 +81,21 @@ Reason: the email provider needs the address to deliver a link the person asked 
 
 There is no retention or deletion rule yet. Do not build a deletion job, an expiry sweep, or an anonymisation step for any private record. Ask the human first.
 
-**The one approved exception:** FailedAttempt rows older than 24 hours may be deleted. They are operational counters for the wrong-password and wrong-check-in-code pauses, not member records. The cleanup runs inside the code that writes a FailedAttempt row: each time one is written, rows older than 24 hours are deleted in the same call. There is no scheduled job. The delete filters on that table and the age only, and must not touch any other model.
+**Approved exception one:** FailedAttempt rows older than 24 hours may be deleted. They are operational counters for the wrong-password and wrong-check-in-code pauses, not member records. The cleanup runs inside the code that writes a FailedAttempt row: each time one is written, rows older than 24 hours are deleted in the same call. There is no scheduled job. The delete filters on that table and the age only, and must not touch any other model.
 
 Reason: the PRD leaves retention open. A deletion job built on a guess destroys records nobody agreed to destroy. FailedAttempt holds an email address and a timestamp for a ten-minute window, so keeping it longer than a day serves no purpose.
+
+**Approved exception two (D37):** UNVERIFIED accounts older than 2 months may be deleted, by the same kind of rule: the cleanup runs inside the code that writes a new sign-up, deletes in the same call, and there is no scheduled job. The delete filters on status UNVERIFIED and age only, in the Account table only. It deletes that account's email tokens with it. An UNVERIFIED account has no member, so no member record, ledger entry or attendance row is touched. An ACTIVE account is never deleted by it.
+
+Reason: an account that never verified holds a name, phone and email that serve no purpose. FREE accounts never expire, so without a cleanup, abandoned sign-ups would pile up.
 
 ## Checks before merge
 
 - No member-scoped query exists without the member link from the session's account.
 - No account without a member link can reach a private record or a card.
 - No admin read runs without a staff role check.
+- An existing member's opening balance cannot be saved without the owner's identity confirmation.
+- The Account cleanup deletes only UNVERIFIED accounts older than 2 months.
 - No private model appears in any embedding or vector insert path.
 - No private query runs in a client component.
 - Name-stripping runs before every model call.
