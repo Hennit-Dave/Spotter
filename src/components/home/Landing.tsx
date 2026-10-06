@@ -36,7 +36,6 @@ export function Landing() {
       <footer className={styles.footer}>
         <p className={styles.footerBrand}>Spotter</p>
         <p>Your gym&apos;s answer desk.</p>
-        <p>Access cards are issued at the gym desk.</p>
       </footer>
     </div>
   );
