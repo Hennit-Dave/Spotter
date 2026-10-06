@@ -26,7 +26,7 @@ Reason: the member-scoped rule alone would make the owner screens impossible to 
 
 ## Member reads go through one helper
 
-All member-scoped reads use a shared query helper that takes the linked member ID, read from the signed-in account on the server, as a required argument. Do not write a raw member-scoped query inline in a route.
+All member-scoped reads use a shared query helper that takes the member ID, read from the signed-in, verified account on the server, as a required argument. Do not write a raw member-scoped query inline in a route.
 
 Admin reads do not use this helper. They use their own path, behind the role check.
 
