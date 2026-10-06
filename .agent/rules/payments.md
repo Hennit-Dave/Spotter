@@ -58,7 +58,7 @@ Reason: the webhook endpoint is public. Anything can post to it.
 After the signature is verified and the attempt is found by its reference, a successful webhook does all of this in one database transaction, with the member row locked:
 
 1. Check whether a ledger entry or a member change already exists for this attempt. If so, acknowledge the webhook with a success response and write nothing. A resent webhook must never write a second time.
-2. Check that the amount the gateway reports equals the attempt's amount. If it does not, set the attempt to NEEDS_REVIEW and write no paid time. The owner reviews it (D33). Do not write a ledger entry for it until the human decides what a mismatch should record.
+2. Check that the amount the gateway reports equals the attempt's amount. If it does not, write the payment to the ledger for the amount the gateway reports, linked to the attempt, with no charge and no paid time, set the attempt to NEEDS_REVIEW, and stop. The money did arrive, so the ledger records it. The owner decides what happens next (D33).
 3. For a renewal: write a ledger CHARGE for the month and a ledger PAYMENT for the same amount, linked to the attempt. Extend paid time by one calendar month, clamped to the end of the month, counted from the later of today (Africa/Lagos) and the current paid-until. Write one MemberChange row with the field PAID_UNTIL, no author, the source PAYMENT and the attempt. Set the attempt to SUCCESS.
 4. For a balance: write a ledger PAYMENT only, linked to the attempt. Do not touch paid time. Set the attempt to SUCCESS.
 
@@ -112,7 +112,7 @@ Reason: the balance answer is only as honest as the payments behind it. An unent
 
 - Gateway unreachable at initiate: show "Cannot start payment right now, try again shortly." Leave no half-written attempt.
 - Webhook says failed: set the attempt to FAILED. Write no ledger entry and no paid time.
-- Webhook succeeded but the amount does not match the attempt: set the attempt to NEEDS_REVIEW and extend no paid time. The owner sees it.
+- Webhook succeeded but the amount does not match the attempt: write the payment to the ledger with no charge and no paid time, and set the attempt to NEEDS_REVIEW. The owner sees it.
 - No monthly price set: Pay is closed. Show that payments are not open yet.
 - Member abandons checkout: the attempt becomes ABANDONED, which is not a failure. See testing.md for why the two are counted separately.
 
@@ -120,7 +120,7 @@ Reason: the balance answer is only as honest as the payments behind it. An unent
 
 - No ledger entry for a card payment can be written without a signature-verified webhook.
 - Two identical webhooks for one reference produce one ledger entry, one paid-until change and one audit row.
-- A webhook whose amount does not match extends no paid time.
+- A webhook whose amount does not match writes the payment to the ledger with no charge and no paid time, and marks the attempt NEEDS_REVIEW.
 - A renewal writes the charge, the payment, the extension and the audit row together or not at all.
 - Two different payments arriving at once both add their month.
 - A balance payment never changes paid-until.
