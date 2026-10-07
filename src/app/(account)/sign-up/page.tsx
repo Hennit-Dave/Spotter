@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import type { ReactNode } from 'react';
 import {
-  AuthCard,
   Form,
   NavLink,
   PendingButton,
@@ -9,9 +9,28 @@ import {
   TextField,
   type AuthNotice,
 } from '@/components/account/AuthCard';
+import { AccountModal } from '@/components/account/AccountModal';
+import { Notice } from '@/components/admin/AuthCard';
+import { Landing } from '@/components/home/Landing';
 import { RadioField } from '@/components/account/RadioField';
 import { getSignedInMember } from '@/server/auth/member-session';
 import { resendLink, signUp } from './actions';
+
+function SignUpCard({ title, notice, children }: {
+  title: string;
+  notice?: AuthNotice;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <Landing />
+      <AccountModal title={title}>
+        {notice && <Notice notice={notice} />}
+        {children}
+      </AccountModal>
+    </>
+  );
+}
 
 export async function generateMetadata({
   searchParams,
@@ -43,7 +62,7 @@ export default async function SignUpPage({
 
   if (sent) {
     return (
-      <AuthCard
+      <SignUpCard
         title="Check your email"
         notice={
           again
@@ -64,12 +83,12 @@ export default async function SignUpPage({
           <PendingButton pendingLabel="Sending">Send a new link</PendingButton>
         </Form>
         <NavLink href="/log-in">Log in</NavLink>
-      </AuthCard>
+      </SignUpCard>
     );
   }
 
   return (
-    <AuthCard title="Create account" notice={e ? NOTICES[e] : undefined}>
+    <SignUpCard title="Create account" notice={e ? NOTICES[e] : undefined}>
       <Form action={signUp}>
         <TextField name="name" label="Name" type="text" autoComplete="name" maxLength={100} />
         <TextField name="email" label="Email" type="email" autoComplete="email" />
@@ -85,6 +104,6 @@ export default async function SignUpPage({
         <PendingButton pendingLabel="Creating">Create account</PendingButton>
       </Form>
       <NavLink href="/log-in">Log in</NavLink>
-    </AuthCard>
+    </SignUpCard>
   );
 }
