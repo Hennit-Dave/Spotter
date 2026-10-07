@@ -1,5 +1,39 @@
 .page {
+  --account-navigation-height: calc(var(--size-tap) + 2 * var(--space-4));
   width: calc(100% - 2 * var(--space-2));
   max-width: 600px;
   margin-inline: auto;
+}
+
+.navigation {
+  display: flex;
+  align-items: center;
+  height: var(--account-navigation-height);
+  padding: var(--space-4);
+}
+
+.page > main {
+  min-height: calc(100vh - var(--account-navigation-height));
+  min-height: calc(100dvh - var(--account-navigation-height));
+}
+
+.back {
+  display: inline-grid;
+  place-items: center;
+  width: var(--size-tap);
+  height: var(--size-tap);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-container);
+  color: var(--color-on-surface);
+  cursor: pointer;
+}
+
+.back:hover {
+  background: var(--color-surface-container-highest);
+}
+
+.back:focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 3px;
 }
