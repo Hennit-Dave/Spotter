@@ -1,0 +1,5 @@
+.page {
+  width: calc(100% - 2 * var(--space-2));
+  max-width: 600px;
+  margin-inline: auto;
+}
