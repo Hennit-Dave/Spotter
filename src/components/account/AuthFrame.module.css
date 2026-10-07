@@ -19,7 +19,12 @@
   box-shadow: var(--shadow-soft-shadow);
 }
 
+.logo {
+  align-self: center;
+}
+
 .title {
+  text-align: center;
   font-family: var(--type-headline-small-dmsans-font-family);
   font-size: var(--type-headline-small-dmsans-font-size);
   font-weight: var(--type-headline-small-dmsans-font-weight);

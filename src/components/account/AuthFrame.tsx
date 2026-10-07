@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
+import { LogoMark } from '@/components/home/LogoMark';
 import { Notice, type AuthNotice } from '@/components/admin/AuthCard';
 import styles from './AuthFrame.module.css';
 
-// The framed card that holds an account form. It is plain markup, not a modal, so the logo and
-// back button in the account navigation stay clickable.
+// The framed card that holds an account form, topped by the logo. It is plain markup, not a
+// modal, so the back button in the account navigation stays clickable.
 export function AuthFrame({
   title,
   notice,
@@ -16,6 +17,9 @@ export function AuthFrame({
   return (
     <main className={styles.page}>
       <section className={styles.frame} aria-labelledby="auth-frame-title">
+        <div className={styles.logo}>
+          <LogoMark />
+        </div>
         <h1 id="auth-frame-title" className={styles.title}>
           {title}
         </h1>

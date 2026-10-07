@@ -8,15 +8,12 @@
 .navigation {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   height: var(--account-navigation-height);
-  padding: var(--space-4);
-}
-
-.brand {
-  display: inline-flex;
-  border-radius: var(--radius-md);
-  text-decoration: none;
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+  padding-block: var(--space-4);
 }
 
 .page > main {
@@ -25,23 +22,25 @@
 }
 
 .back {
-  display: inline-grid;
-  place-items: center;
-  width: var(--size-tap);
-  height: var(--size-tap);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-tap);
+  padding: 0;
   border: none;
-  border-radius: var(--radius-md);
-  background: var(--color-neutral-container);
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--color-on-surface);
+  font: inherit;
   cursor: pointer;
 }
 
 .back:hover {
-  background: var(--color-surface-container-highest);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
-.back:focus-visible,
-.brand:focus-visible {
+.back:focus-visible {
   outline: 2px solid var(--color-secondary);
   outline-offset: 3px;
 }
