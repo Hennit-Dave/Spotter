@@ -36,7 +36,7 @@ export default async function ResetPasswordPage({
     return (
       <AuthCard title="This link no longer works">
         <Text>It has expired or was already used. Ask for a new one.</Text>
-        <NavLink href="/forgot-password">Send a new link</NavLink>
+        <NavLink href="/auth?view=forgot-password">Send a new link</NavLink>
       </AuthCard>
     );
   }

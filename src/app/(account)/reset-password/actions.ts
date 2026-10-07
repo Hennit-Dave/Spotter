@@ -11,7 +11,7 @@ function text(formData: FormData, name: string): string {
 
 export async function resetPassword(formData: FormData): Promise<void> {
   const token = text(formData, 'token');
-  if (token === '') redirect('/forgot-password');
+  if (token === '') redirect('/auth?view=forgot-password');
   const back = `/reset-password?token=${encodeURIComponent(token)}`;
 
   const result = await completeMemberReset(
@@ -22,5 +22,5 @@ export async function resetPassword(formData: FormData): Promise<void> {
   );
 
   if (!result.ok) redirect(`${back}&e=${result.problem}`);
-  redirect('/log-in?reset=1');
+  redirect('/auth?view=log-in&reset=1');
 }

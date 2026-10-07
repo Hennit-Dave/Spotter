@@ -1,15 +1,6 @@
-import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
-import {
-  Form,
-  NavLink,
-  PendingButton,
-  TextField,
-  type AuthNotice,
-} from '@/components/account/AuthCard';
-import { AuthFrame } from '@/components/account/AuthFrame';
-import { getSignedInMember } from '@/server/auth/member-session';
-import { logIn } from './actions';
+import { Form, NavLink, PendingButton, TextField, type AuthNotice } from './AuthCard';
+import { AuthFrame } from './AuthFrame';
+import { logIn } from '@/app/(account)/auth/actions';
 
 const NOTICES: Record<string, AuthNotice> = {
   invalid: { tone: 'error', text: 'That email and password did not match.' },
@@ -21,16 +12,15 @@ const NOTICES: Record<string, AuthNotice> = {
   verified: { tone: 'info', text: 'Your account is ready. Log in.' },
 };
 
-export const metadata: Metadata = { title: 'Log in' };
-
-export default async function LogInPage({
-  searchParams,
+export function LogInView({
+  e,
+  reset,
+  verified,
 }: {
-  searchParams: Promise<{ e?: string; reset?: string; verified?: string }>;
+  e?: string;
+  reset?: string;
+  verified?: string;
 }) {
-  if (await getSignedInMember()) redirect('/');
-
-  const { e, reset, verified } = await searchParams;
   const notice = e ? NOTICES[e] : reset ? NOTICES.reset : verified ? NOTICES.verified : undefined;
 
   return (
@@ -45,8 +35,8 @@ export default async function LogInPage({
         />
         <PendingButton pendingLabel="Logging in">Log in</PendingButton>
       </Form>
-      <NavLink href="/forgot-password">Forgot password</NavLink>
-      <NavLink href="/sign-up">Create account</NavLink>
+      <NavLink href="/auth?view=forgot-password">Forgot password</NavLink>
+      <NavLink href="/auth?view=sign-up">Create account</NavLink>
     </AuthFrame>
   );
 }

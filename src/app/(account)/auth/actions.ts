@@ -3,6 +3,9 @@
 import { after } from 'next/server';
 import { redirect } from 'next/navigation';
 import { getDb } from '@/server/db';
+import { checkMemberLogin } from '@/server/auth/member-login';
+import { requestMemberReset } from '@/server/auth/member-reset';
+import { startMemberSession } from '@/server/auth/member-session';
 import { processSignUp, requestFreshVerificationLink, validateSignUp } from '@/server/auth/signup';
 
 function text(formData: FormData, name: string): string {
@@ -21,7 +24,7 @@ export async function signUp(formData: FormData): Promise<void> {
     phone: text(formData, 'phone'),
     answer: text(formData, 'answer'),
   });
-  if (!checked.ok) redirect(`/sign-up?e=${checked.problem}`);
+  if (!checked.ok) redirect(`/auth?view=sign-up&e=${checked.problem}`);
 
   after(async () => {
     try {
@@ -30,7 +33,7 @@ export async function signUp(formData: FormData): Promise<void> {
       console.error('Sign up failed');
     }
   });
-  redirect('/sign-up?sent=1');
+  redirect('/auth?view=sign-up&sent=1');
 }
 
 export async function resendLink(formData: FormData): Promise<void> {
@@ -42,5 +45,34 @@ export async function resendLink(formData: FormData): Promise<void> {
       console.error('Verification email failed');
     }
   });
-  redirect('/sign-up?sent=1&again=1');
+  redirect('/auth?view=sign-up&sent=1&again=1');
+}
+
+export async function logIn(formData: FormData): Promise<void> {
+  const result = await checkMemberLogin(
+    getDb(),
+    text(formData, 'email'),
+    text(formData, 'password'),
+  );
+  if (!result.ok) redirect(`/auth?view=log-in&e=${result.reason}`);
+
+  await startMemberSession(result.account);
+  redirect('/');
+}
+
+// The person always gets the same confirmation. The limit, the lookup and the email run after
+// the response is sent, so neither the page's timing nor its message reveals whether the email
+// has an account.
+export async function requestPasswordReset(formData: FormData): Promise<void> {
+  const email = text(formData, 'email');
+
+  after(async () => {
+    try {
+      await requestMemberReset(getDb(), email);
+    } catch {
+      console.error('Password reset email failed');
+    }
+  });
+
+  redirect('/auth?view=forgot-password&sent=1');
 }

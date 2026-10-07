@@ -14,7 +14,7 @@ function text(formData: FormData, name: string): string {
 // sign-up again, because nothing personal is ever put in an address.
 export async function verifyEmail(formData: FormData): Promise<void> {
   const token = text(formData, 'token');
-  if (token === '') redirect('/sign-up');
+  if (token === '') redirect('/auth?view=sign-up');
   const back = `/verify-email?token=${encodeURIComponent(token)}`;
 
   const result = await completeVerification(getDb(), {
@@ -30,5 +30,5 @@ export async function verifyEmail(formData: FormData): Promise<void> {
     if (result.problem === 'expired') redirect(back);
     redirect(`${back}&e=${result.problem}`);
   }
-  redirect('/log-in?verified=1');
+  redirect('/auth?view=log-in&verified=1');
 }

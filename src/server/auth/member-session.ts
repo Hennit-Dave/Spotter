@@ -81,6 +81,6 @@ export const getSignedInMember = cache(async (): Promise<SignedInMember | null> 
 // log in.
 export async function requireMember(): Promise<SignedInMember> {
   const member = await getSignedInMember();
-  if (!member) redirect('/log-in');
+  if (!member) redirect('/auth?view=log-in');
   return member;
 }

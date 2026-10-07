@@ -1,26 +1,7 @@
-import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
-import {
-  Form,
-  NavLink,
-  PendingButton,
-  Text,
-  TextField,
-  type AuthNotice,
-} from '@/components/account/AuthCard';
-import { AuthFrame } from '@/components/account/AuthFrame';
-import { RadioField } from '@/components/account/RadioField';
-import { getSignedInMember } from '@/server/auth/member-session';
-import { resendLink, signUp } from './actions';
-
-export async function generateMetadata({
-  searchParams,
-}: {
-  searchParams: Promise<{ sent?: string }>;
-}): Promise<Metadata> {
-  const { sent } = await searchParams;
-  return { title: sent ? 'Check your email' : 'Create account' };
-}
+import { Form, NavLink, PendingButton, Text, TextField, type AuthNotice } from './AuthCard';
+import { AuthFrame } from './AuthFrame';
+import { RadioField } from './RadioField';
+import { resendLink, signUp } from '@/app/(account)/auth/actions';
 
 const NOTICES: Record<string, AuthNotice> = {
   name: { tone: 'error', text: 'Enter your name.' },
@@ -32,15 +13,7 @@ const NOTICES: Record<string, AuthNotice> = {
   answer: { tone: 'error', text: 'Choose Yes or No.' },
 };
 
-export default async function SignUpPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ e?: string; sent?: string; again?: string }>;
-}) {
-  if (await getSignedInMember()) redirect('/');
-
-  const { e, sent, again } = await searchParams;
-
+export function SignUpView({ e, sent, again }: { e?: string; sent?: string; again?: string }) {
   if (sent) {
     return (
       <AuthFrame
@@ -63,7 +36,7 @@ export default async function SignUpPage({
           <TextField name="email" label="Email" type="email" autoComplete="email" />
           <PendingButton pendingLabel="Sending">Send a new link</PendingButton>
         </Form>
-        <NavLink href="/log-in">Log in</NavLink>
+        <NavLink href="/auth?view=log-in">Log in</NavLink>
       </AuthFrame>
     );
   }
@@ -84,7 +57,7 @@ export default async function SignUpPage({
         />
         <PendingButton pendingLabel="Creating">Create account</PendingButton>
       </Form>
-      <NavLink href="/log-in">Log in</NavLink>
+      <NavLink href="/auth?view=log-in">Log in</NavLink>
     </AuthFrame>
   );
 }

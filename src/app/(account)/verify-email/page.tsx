@@ -47,8 +47,8 @@ export default async function VerifyEmailPage({
     return (
       <AuthCard title="This link no longer works">
         <Text>It has expired or was already used. Ask for a new one.</Text>
-        <NavLink href="/sign-up?sent=1">Send a new link</NavLink>
-        <NavLink href="/log-in">Log in</NavLink>
+        <NavLink href="/auth?view=sign-up&sent=1">Send a new link</NavLink>
+        <NavLink href="/auth?view=log-in">Log in</NavLink>
       </AuthCard>
     );
   }

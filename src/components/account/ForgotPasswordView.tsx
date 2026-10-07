@@ -1,23 +1,8 @@
-import type { Metadata } from 'next';
-import {
-  Form,
-  NavLink,
-  PendingButton,
-  Text,
-  TextField,
-} from '@/components/account/AuthCard';
-import { AuthFrame } from '@/components/account/AuthFrame';
-import { requestPasswordReset } from './actions';
+import { Form, NavLink, PendingButton, Text, TextField } from './AuthCard';
+import { AuthFrame } from './AuthFrame';
+import { requestPasswordReset } from '@/app/(account)/auth/actions';
 
-export const metadata: Metadata = { title: 'Forgot password' };
-
-export default async function ForgotPasswordPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sent?: string }>;
-}) {
-  const { sent } = await searchParams;
-
+export function ForgotPasswordView({ sent }: { sent?: string }) {
   return (
     <AuthFrame
       title="Forgot password"
@@ -35,7 +20,7 @@ export default async function ForgotPasswordPage({
         <TextField name="email" label="Email" type="email" autoComplete="username" />
         <PendingButton pendingLabel="Sending">Send link</PendingButton>
       </Form>
-      <NavLink href="/log-in">Back to log in</NavLink>
+      <NavLink href="/auth?view=log-in">Back to log in</NavLink>
     </AuthFrame>
   );
 }

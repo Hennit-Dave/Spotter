@@ -20,10 +20,10 @@ export function Landing() {
             Your gym.<br /><span>On the record.</span>
           </h1>
           <div className={styles.actions}>
-            <Link href="/sign-up" prefetch={false} className={styles.primary}>
+            <Link href="/auth?view=sign-up" prefetch={false} className={styles.primary}>
               Create account
             </Link>
-            <Link href="/log-in" prefetch={false} className={styles.secondary}>Log in</Link>
+            <Link href="/auth?view=log-in" prefetch={false} className={styles.secondary}>Log in</Link>
           </div>
           <p className={styles.note}>Free app access. Gym membership is separate.</p>
         </section>
