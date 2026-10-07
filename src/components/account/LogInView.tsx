@@ -1,5 +1,6 @@
-import { Form, NavLink, PendingButton, TextField, type AuthNotice } from './AuthCard';
+import { Form, NavLink, TextField, type AuthNotice } from './AuthCard';
 import { AuthFrame } from './AuthFrame';
+import { SubmitWhenValid } from './SubmitWhenValid';
 import { logIn } from '@/app/(account)/auth/actions';
 
 const NOTICES: Record<string, AuthNotice> = {
@@ -26,14 +27,20 @@ export function LogInView({
   return (
     <AuthFrame title="Log in" notice={notice}>
       <Form action={logIn}>
-        <TextField name="email" label="Email" type="email" autoComplete="username" />
+        <TextField
+          name="email"
+          label="Email"
+          type="email"
+          autoComplete="username"
+          checkEmail
+        />
         <TextField
           name="password"
           label="Password"
           type="password"
           autoComplete="current-password"
         />
-        <PendingButton pendingLabel="Logging in">Log in</PendingButton>
+        <SubmitWhenValid pendingLabel="Logging in">Log in</SubmitWhenValid>
       </Form>
       <NavLink href="/auth?view=forgot-password">Forgot password</NavLink>
       <NavLink href="/auth?view=sign-up">Create account</NavLink>

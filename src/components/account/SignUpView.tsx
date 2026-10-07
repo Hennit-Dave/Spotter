@@ -1,16 +1,19 @@
 import { Form, NavLink, PendingButton, Text, TextField, type AuthNotice } from './AuthCard';
 import { AuthFrame } from './AuthFrame';
 import { RadioField } from './RadioField';
+import { TermsCheckbox } from './TermsCheckbox';
+import { SubmitWhenValid } from './SubmitWhenValid';
 import { resendLink, signUp } from '@/app/(account)/auth/actions';
 
 const NOTICES: Record<string, AuthNotice> = {
-  name: { tone: 'error', text: 'Enter your name.' },
+  name: { tone: 'error', text: 'Enter your first and last name.' },
   email: { tone: 'error', text: 'Enter a valid email address.' },
   phone: {
     tone: 'error',
     text: 'Enter a phone number we can use, for example 0807 465 2543 or +234 807 465 2543.',
   },
   answer: { tone: 'error', text: 'Choose Yes or No.' },
+  terms: { tone: 'error', text: 'Accept the Terms of Service to create an account.' },
 };
 
 export function SignUpView({ e, sent, again }: { e?: string; sent?: string; again?: string }) {
@@ -44,8 +47,15 @@ export function SignUpView({ e, sent, again }: { e?: string; sent?: string; agai
   return (
     <AuthFrame title="Create account" notice={e ? NOTICES[e] : undefined}>
       <Form action={signUp}>
-        <TextField name="name" label="Name" type="text" autoComplete="name" maxLength={100} />
-        <TextField name="email" label="Email" type="email" autoComplete="email" />
+        <TextField
+          name="name"
+          label="Full name"
+          type="text"
+          autoComplete="name"
+          maxLength={100}
+          fullName
+        />
+        <TextField name="email" label="Email" type="email" autoComplete="email" checkEmail />
         <TextField name="phone" label="Phone" type="tel" autoComplete="tel" maxLength={30} />
         <RadioField
           name="answer"
@@ -55,7 +65,8 @@ export function SignUpView({ e, sent, again }: { e?: string; sent?: string; agai
             { value: 'no', label: 'No' },
           ]}
         />
-        <PendingButton pendingLabel="Creating">Create account</PendingButton>
+        <TermsCheckbox />
+        <SubmitWhenValid pendingLabel="Creating">Create account</SubmitWhenValid>
       </Form>
       <NavLink href="/auth?view=log-in">Log in</NavLink>
     </AuthFrame>

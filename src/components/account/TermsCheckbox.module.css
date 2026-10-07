@@ -1,0 +1,37 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--size-tap);
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-neutral-container);
+  color: var(--color-on-neutral-container);
+  border-radius: var(--radius-md);
+  font-family: var(--type-body-medium-dmsans-font-family);
+  font-size: var(--type-body-medium-dmsans-font-size);
+  font-weight: var(--type-body-medium-dmsans-font-weight);
+  line-height: var(--type-body-medium-dmsans-line-height);
+  letter-spacing: var(--type-body-medium-dmsans-letter-spacing);
+}
+
+.option a {
+  color: var(--color-secondary);
+  text-decoration: underline;
+}
+
+.box {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-primary);
+}
+
+.option:has(.box:focus-visible) {
+  outline: medium solid var(--color-secondary);
+}

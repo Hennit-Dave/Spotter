@@ -6,6 +6,7 @@ const good = {
   email: ' Ada@Example.COM ',
   phone: '0807 465 2543',
   answer: 'no',
+  acceptedTerms: true,
 };
 
 describe('sign-up form', () => {
@@ -39,8 +40,24 @@ describe('sign-up form', () => {
   });
 
   it('refuses a name that is too long', () => {
-    expect(cleanName('a'.repeat(101))).toBeNull();
-    expect(cleanName('a'.repeat(100))).not.toBeNull();
+    expect(cleanName(`${'a'.repeat(99)} b`)).toBeNull();
+    expect(cleanName(`${'a'.repeat(98)} b`)).not.toBeNull();
+  });
+
+  it('needs at least two names separated by a space', () => {
+    expect(cleanName('Ada')).toBeNull();
+    expect(cleanName('  Ada  ')).toBeNull();
+    expect(cleanName('')).toBeNull();
+    expect(cleanName('Ada Obi')).toBe('Ada Obi');
+    expect(cleanName('Ada  Obi   Eze')).toBe('Ada Obi Eze');
+    expect(validateSignUp({ ...good, name: 'Ada' })).toEqual({ ok: false, problem: 'name' });
+  });
+
+  it('refuses a sign-up that has not accepted the terms', () => {
+    expect(validateSignUp({ ...good, acceptedTerms: false })).toEqual({
+      ok: false,
+      problem: 'terms',
+    });
   });
 
   it('has no password field', () => {

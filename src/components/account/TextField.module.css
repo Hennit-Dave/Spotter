@@ -1,0 +1,37 @@
+.control {
+  position: relative;
+  display: flex;
+}
+
+input.withToggle {
+  padding-right: calc(var(--size-tap) + var(--space-2));
+}
+
+.toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: var(--size-tap);
+  height: 100%;
+  min-height: var(--size-tap);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+}
+
+.toggle:focus-visible {
+  outline: medium solid var(--color-secondary);
+}
+
+.hint {
+  color: var(--color-on-surface-variant);
+  font-family: var(--type-body-medium-dmsans-font-family);
+  font-size: var(--type-body-medium-dmsans-font-size);
+  font-weight: var(--type-body-medium-dmsans-font-weight);
+  line-height: var(--type-body-medium-dmsans-line-height);
+  letter-spacing: var(--type-body-medium-dmsans-letter-spacing);
+}

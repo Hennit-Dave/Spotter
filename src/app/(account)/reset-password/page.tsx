@@ -43,7 +43,7 @@ export default async function ResetPasswordPage({
 
   return (
     <AuthCard title="Choose a new password" notice={e ? NOTICES[e] : undefined}>
-      <Text>Use at least 8 characters. Choosing a new password logs you out everywhere else.</Text>
+      <Text>Choosing a new password logs you out everywhere else.</Text>
       <Form action={resetPassword}>
         <input type="hidden" name="token" value={token} />
         <TextField
@@ -51,6 +51,7 @@ export default async function ResetPasswordPage({
           label="New password"
           type="password"
           autoComplete="new-password"
+          hint="Use at least 8 characters."
         />
         <TextField
           name="confirm"

@@ -23,6 +23,7 @@ export async function signUp(formData: FormData): Promise<void> {
     email: text(formData, 'email'),
     phone: text(formData, 'phone'),
     answer: text(formData, 'answer'),
+    acceptedTerms: text(formData, 'terms') === 'accepted',
   });
   if (!checked.ok) redirect(`/auth?view=sign-up&e=${checked.problem}`);
 

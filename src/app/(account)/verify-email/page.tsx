@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 const NOTICES: Record<string, AuthNotice> = {
-  name: { tone: 'error', text: 'Enter your name.' },
+  name: { tone: 'error', text: 'Enter your first and last name.' },
   phone: {
     tone: 'error',
     text: 'Enter a phone number we can use, for example 0807 465 2543 or +234 807 465 2543.',
@@ -60,10 +60,11 @@ export default async function VerifyEmailPage({
         <input type="hidden" name="token" value={token} />
         <TextField
           name="name"
-          label="Name"
+          label="Full name"
           type="text"
           autoComplete="name"
           maxLength={100}
+          fullName
           defaultValue={details.name}
         />
         <TextField
@@ -83,7 +84,13 @@ export default async function VerifyEmailPage({
             { value: 'no', label: 'No' },
           ]}
         />
-        <TextField name="password" label="Password" type="password" autoComplete="new-password" />
+        <TextField
+          name="password"
+          label="Password"
+          type="password"
+          autoComplete="new-password"
+          hint="Use at least 8 characters."
+        />
         <TextField
           name="confirm"
           label="Type it again"

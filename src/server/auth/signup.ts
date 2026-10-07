@@ -11,6 +11,10 @@ import { takeAttempt } from './throttle';
 import { VERIFY_TOKEN_LIFETIME_MS, issueToken } from './tokens';
 
 export const MAX_NAME_LENGTH = 100;
+export const MIN_NAME_LENGTH = 2;
+// A full name: at least two names separated by a space. The same rule runs in the form
+// (components/account/full-name.ts), which server code is not allowed to share.
+export const MIN_NAME_WORDS = 2;
 // Unverified accounts older than this are deleted whenever a sign-up is written (privacy.md).
 export const UNVERIFIED_RETENTION_MONTHS = 2;
 
@@ -20,6 +24,8 @@ export interface SignUpInput {
   phone: string;
   // The answer to "Already a member at the gym?". Anything but yes or no is rejected.
   answer: string;
+  // Whether the terms box was ticked. Sign-up is refused without it.
+  acceptedTerms: boolean;
 }
 
 export interface CleanSignUp {
@@ -29,13 +35,14 @@ export interface CleanSignUp {
   claimsExistingMember: boolean;
 }
 
-export type SignUpProblem = 'name' | 'email' | 'phone' | 'answer';
+export type SignUpProblem = 'name' | 'email' | 'phone' | 'answer' | 'terms';
 
 export type Mailer = (kind: AccountEmailKind, to: string, link: string) => Promise<boolean>;
 
 export function cleanName(raw: string): string | null {
   const name = raw.trim().replace(/\s+/g, ' ');
-  return name !== '' && name.length <= MAX_NAME_LENGTH ? name : null;
+  if (name.length < MIN_NAME_LENGTH || name.length > MAX_NAME_LENGTH) return null;
+  return name.split(' ').length >= MIN_NAME_WORDS ? name : null;
 }
 
 export function parseAnswer(raw: string): boolean | null {
@@ -57,6 +64,7 @@ export function validateSignUp(
   if (phone === null) return { ok: false, problem: 'phone' };
   const claimsExistingMember = parseAnswer(input.answer);
   if (claimsExistingMember === null) return { ok: false, problem: 'answer' };
+  if (!input.acceptedTerms) return { ok: false, problem: 'terms' };
   return { ok: true, value: { name, email, phone, claimsExistingMember } };
 }
 

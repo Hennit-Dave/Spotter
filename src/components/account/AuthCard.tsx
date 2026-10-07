@@ -6,7 +6,7 @@ export {
   NavLink,
   SubmitButton,
   Text,
-  TextField,
   type AuthNotice,
 } from '@/components/admin/AuthCard';
 export { PendingButton } from '@/components/admin/PendingButton';
+export { TextField } from './TextField';
