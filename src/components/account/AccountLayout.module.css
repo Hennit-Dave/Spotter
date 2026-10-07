@@ -8,8 +8,15 @@
 .navigation {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   height: var(--account-navigation-height);
   padding: var(--space-4);
+}
+
+.brand {
+  display: inline-flex;
+  border-radius: var(--radius-md);
+  text-decoration: none;
 }
 
 .page > main {
@@ -33,7 +40,8 @@
   background: var(--color-surface-container-highest);
 }
 
-.back:focus-visible {
+.back:focus-visible,
+.brand:focus-visible {
   outline: 2px solid var(--color-secondary);
   outline-offset: 3px;
 }
