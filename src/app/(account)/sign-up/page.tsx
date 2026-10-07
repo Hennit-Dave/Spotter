@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import {
-  AuthCard,
   Form,
   NavLink,
   PendingButton,
@@ -9,6 +8,7 @@ import {
   TextField,
   type AuthNotice,
 } from '@/components/account/AuthCard';
+import { AuthFrame } from '@/components/account/AuthFrame';
 import { RadioField } from '@/components/account/RadioField';
 import { getSignedInMember } from '@/server/auth/member-session';
 import { resendLink, signUp } from './actions';
@@ -43,7 +43,7 @@ export default async function SignUpPage({
 
   if (sent) {
     return (
-      <AuthCard
+      <AuthFrame
         title="Check your email"
         notice={
           again
@@ -64,12 +64,12 @@ export default async function SignUpPage({
           <PendingButton pendingLabel="Sending">Send a new link</PendingButton>
         </Form>
         <NavLink href="/log-in">Log in</NavLink>
-      </AuthCard>
+      </AuthFrame>
     );
   }
 
   return (
-    <AuthCard title="Create account" notice={e ? NOTICES[e] : undefined}>
+    <AuthFrame title="Create account" notice={e ? NOTICES[e] : undefined}>
       <Form action={signUp}>
         <TextField name="name" label="Name" type="text" autoComplete="name" maxLength={100} />
         <TextField name="email" label="Email" type="email" autoComplete="email" />
@@ -85,6 +85,6 @@ export default async function SignUpPage({
         <PendingButton pendingLabel="Creating">Create account</PendingButton>
       </Form>
       <NavLink href="/log-in">Log in</NavLink>
-    </AuthCard>
+    </AuthFrame>
   );
 }

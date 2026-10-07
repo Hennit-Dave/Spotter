@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import {
-  AuthCard,
   Form,
   NavLink,
   PendingButton,
   TextField,
   type AuthNotice,
 } from '@/components/account/AuthCard';
+import { AuthFrame } from '@/components/account/AuthFrame';
 import { getSignedInMember } from '@/server/auth/member-session';
 import { logIn } from './actions';
 
@@ -34,7 +34,7 @@ export default async function LogInPage({
   const notice = e ? NOTICES[e] : reset ? NOTICES.reset : verified ? NOTICES.verified : undefined;
 
   return (
-    <AuthCard title="Log in" notice={notice}>
+    <AuthFrame title="Log in" notice={notice}>
       <Form action={logIn}>
         <TextField name="email" label="Email" type="email" autoComplete="username" />
         <TextField
@@ -47,6 +47,6 @@ export default async function LogInPage({
       </Form>
       <NavLink href="/forgot-password">Forgot password</NavLink>
       <NavLink href="/sign-up">Create account</NavLink>
-    </AuthCard>
+    </AuthFrame>
   );
 }

@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 import {
-  AuthCard,
   Form,
   NavLink,
   PendingButton,
   Text,
   TextField,
 } from '@/components/account/AuthCard';
+import { AuthFrame } from '@/components/account/AuthFrame';
 import { requestPasswordReset } from './actions';
 
 export const metadata: Metadata = { title: 'Forgot password' };
@@ -19,7 +19,7 @@ export default async function ForgotPasswordPage({
   const { sent } = await searchParams;
 
   return (
-    <AuthCard
+    <AuthFrame
       title="Forgot password"
       notice={
         sent
@@ -36,6 +36,6 @@ export default async function ForgotPasswordPage({
         <PendingButton pendingLabel="Sending">Send link</PendingButton>
       </Form>
       <NavLink href="/log-in">Back to log in</NavLink>
-    </AuthCard>
+    </AuthFrame>
   );
 }
